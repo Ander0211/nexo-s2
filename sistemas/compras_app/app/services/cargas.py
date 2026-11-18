@@ -13,7 +13,7 @@ Reglas generales:
     - Las filas con error se OMITEN (se informa cuáles y por qué); las demás se cargan.
     - Lo cargado queda como origen 'subido': es dato PROPIO y se conserva al pulsar «Actualizar Excel».
     - Los encabezados se reconocen sin importar tildes, mayúsculas ni espacios («Stock Max» = STOCKMAX).
-    - Se aceptan archivos .xlsx, .xlsm y .csv (hasta 15 MB y 50.000 filas). Se lee la primera hoja.
+    - Se aceptan archivos .xlsx, .xlsm y .csv (hasta 25 MB y 100.000 filas). Se lee la primera hoja.
 
 Qué hace cada tipo de carga:
     productos     crea los nuevos y actualiza los existentes (solo los campos que el archivo traiga con valor).
@@ -37,8 +37,8 @@ from . import normalizacion as nz
 from .libros_excel import HOJA_META
 
 TIPOS = ("productos", "proveedores", "cotizaciones")
-MAX_BYTES = 15 * 1024 * 1024  # tamaño máximo del archivo: 15 MB
-MAX_FILAS = 50_000  # filas máximas por archivo
+MAX_BYTES = 25 * 1024 * 1024  # tamaño máximo del archivo: 25 MB
+MAX_FILAS = 100_000  # filas máximas por archivo
 MAX_ERRORES_MOSTRADOS = 100  # de los errores solo se detallan los primeros 100 (el total sí se cuenta)
 
 # Marca interna para «el proveedor todavía no existe: se creará al cargar» (cotizaciones con proveedor nuevo).

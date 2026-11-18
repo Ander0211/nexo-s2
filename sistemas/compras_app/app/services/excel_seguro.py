@@ -5,14 +5,14 @@ Un .xlsx es un zip. Un archivo malicioso (o dañado) puede PESAR POCO y, al abri
 (una hoja con millones de ceros comprime a casi nada). Sin esta revisión, subirlo agota la memoria y tumba el servidor.
 
 Aquí se mide, SIN descomprimir nada, cuánto ocuparía cada parte del archivo (el zip declara su tamaño real, y la librería de Python no lee
-más de lo declarado), y se rechaza si pasa del límite. Un Excel normal de 15 MB ocupa unos 100 MB abierto: el límite deja holgura.
+más de lo declarado), y se rechaza si pasa del límite. Un Excel normal de 25 MB ocupa unos 170 MB abierto: el límite deja holgura.
 Si el archivo ni siquiera es un zip, aquí no se dice nada: el lector de Excel ya da su mensaje de «archivo dañado».
 """
 
 import io
 import zipfile
 
-MAX_DESCOMPRIMIDO = 150 * 1024 * 1024  # lo que puede ocupar el archivo ya abierto
+MAX_DESCOMPRIMIDO = 250 * 1024 * 1024  # lo que puede ocupar el archivo ya abierto
 MAX_PARTES = 5000  # cantidad de archivos dentro del zip (un Excel normal tiene unas decenas)
 
 

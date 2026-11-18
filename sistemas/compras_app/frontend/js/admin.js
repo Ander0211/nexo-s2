@@ -498,7 +498,7 @@ async function abrirImportar(sugerida) {
         el('select', { id: 'imp-destino', 'aria-label': 'Tabla de destino' }, E.tablas.map((t) => el('option', { value: t.clave, selected: t.clave === (sugerida || E.clave) }, `${t.titulo} (${t.archivo})`))),
         el('input', { id: 'imp-archivo', type: 'file', accept: '.xlsx,.xlsm,.csv', 'aria-label': 'Archivo Excel' }),
         el('button', { class: 'btn btn-primario', id: 'imp-subir', type: 'button', onclick: subirArchivo }, icono('subir', 16), 'Subir e importar')),
-      el('p', { class: 'nota' }, 'Los encabezados se reconocen aunque cambien tildes o mayúsculas (por ejemplo «stock max»). Máximo 15 MB.')),
+      el('p', { class: 'nota' }, 'Los encabezados se reconocen aunque cambien tildes o mayúsculas (por ejemplo «stock max»). Máximo 25 MB.')),
     el('div', { id: 'imp-resultado', class: 'imp-resultado', 'aria-live': 'polite' }));
   dlgImportar.showModal();
 }

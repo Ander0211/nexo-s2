@@ -61,7 +61,7 @@ def agregar(body: FilasIn, request: Request, db: sqlite3.Connection = Depends(ge
 async def subir(request: Request, nombre: str = "", db: sqlite3.Connection = Depends(get_db)):
     tamano = request.headers.get("content-length", "")
     if tamano.isdigit() and int(tamano) > adicionales.MAX_BYTES + 4096:
-        raise HTTPException(413, "El archivo es demasiado grande: el máximo es 15 MB.")
+        raise HTTPException(413, f"El archivo es demasiado grande: el máximo es {adicionales.MAX_BYTES // 1048576} MB.")
     contenido = await request.body()
     try:
         filas = await run_in_threadpool(adicionales.leer_archivo, contenido, nombre)

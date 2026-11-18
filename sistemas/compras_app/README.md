@@ -236,7 +236,7 @@ Las *cotizaciones* a mano se agregan en el panel «Agregar oferta».
 
 ### Formatos de archivo
 
-Se aceptan `.xlsx`, `.xlsm` y `.csv` (hasta 15 MB y 50.000 filas; se lee la primera hoja). Los encabezados se reconocen
+Se aceptan `.xlsx`, `.xlsm` y `.csv` (hasta 25 MB y 100.000 filas; se lee la primera hoja). Los encabezados se reconocen
 sin importar tildes, mayúsculas o espacios (`Stock Max` = `STOCKMAX`).
 
 | Pestaña | Columnas obligatorias | Columnas opcionales | Qué hace |

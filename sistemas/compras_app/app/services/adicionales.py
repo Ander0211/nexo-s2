@@ -24,8 +24,8 @@ from openpyxl.utils import get_column_letter
 from . import excel_seguro, ranking
 from . import normalizacion as nz
 
-MAX_BYTES = 15 * 1024 * 1024
-MAX_FILAS = 5000
+MAX_BYTES = 25 * 1024 * 1024  # 25 MB
+MAX_FILAS = 100_000  # productos por archivo
 PUESTOS = 3
 
 
@@ -49,7 +49,7 @@ def leer_archivo(contenido: bytes, nombre: str) -> list[dict]:
     if not contenido:
         raise AdicionalesError("El archivo está vacío.")
     if len(contenido) > MAX_BYTES:
-        raise AdicionalesError(f"El archivo pesa {len(contenido) / 1e6:.1f} MB y el máximo es 15 MB.", 413)
+        raise AdicionalesError(f"El archivo pesa {len(contenido) / 1e6:.1f} MB y el máximo es {MAX_BYTES // 1048576} MB.", 413)
     ext = Path(nombre or "").suffix.lower()
     try:
         if ext in (".xlsx", ".xlsm"):

@@ -141,7 +141,7 @@ def test_archivos_invalidos_dan_mensajes_claros(cliente):
     # le falta la columna del código, que es obligatoria
     falta = subir(cliente, "productos", excel_bytes([{"OTRA": 1}])).json()["detail"]
     assert falta.startswith("Faltan las columnas obligatorias") and "COD_PRODUCTO" in falta
-    assert subir(cliente, "productos", b"x" * (16 * 1024 * 1024)).status_code == 413  # pesa más de 15 MB
+    assert subir(cliente, "productos", b"x" * (26 * 1024 * 1024)).status_code == 413  # pesa más de 25 MB
     assert cliente.post("/api/cargas/otracosa", content=valido, headers=OCTETOS).status_code == 422  # tipo inexistente
 
 

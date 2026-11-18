@@ -35,7 +35,7 @@ import pandas as pd
 from . import contacto, excel_seguro
 from . import normalizacion as nz
 
-MAX_BYTES = 15 * 1024 * 1024  # tamaño máximo de un Excel subido: 15 MB
+MAX_BYTES = 25 * 1024 * 1024  # tamaño máximo de un Excel subido: 25 MB (sin tope de filas)
 MAX_LARGO_CELDA = 300  # una celda de texto no puede pasar de 300 caracteres
 
 

@@ -32,7 +32,7 @@ def _bomba(megas: int) -> bytes:
 
 @pytest.fixture()
 def limite_chico(monkeypatch):
-    """Baja el límite a 1 MB para probar con archivos diminutos (en la vida real son 150 MB)."""
+    """Baja el límite a 1 MB para probar con archivos diminutos (en la vida real son 250 MB)."""
     monkeypatch.setattr(excel_seguro, "MAX_DESCOMPRIMIDO", 1024 * 1024)
 
 

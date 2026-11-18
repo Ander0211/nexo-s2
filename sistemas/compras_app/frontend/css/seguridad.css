@@ -169,3 +169,6 @@ dialog.adi-modal { width: min(620px, 96vw); }
 }
 .adi-tabla th, .adi-tabla td { padding-left: 10px; padding-right: 10px; }
 .adi-tabla td.acc { width: 1%; }
+.adi-mas { text-align: center; padding: 14px 10px !important; color: var(--muted); font-size: 13px; }
+.adi-mas .btn { margin: 0 6px; }
+.adi-mas-nota { font-size: 12px; }

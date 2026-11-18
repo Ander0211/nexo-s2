@@ -13,6 +13,8 @@ import { puedeEditar } from './sesion.js';
 const PUESTOS = 3;
 let datos = { items: [], total: 0, con_oferta: 0, sin_oferta: 0, inhabilitados: 0 };
 let modo = 'uno';
+const POR_PAGINA = 300; // con hasta 100.000 productos, dibujar todos a la vez congelaría el navegador
+let visibles = POR_PAGINA;
 
 function pintarKpis() {
   const t = [
@@ -52,7 +54,7 @@ function pintarTabla() {
       editar ? el('th', { rowspan: 2, class: 'acc' }, 'Estado') : null),
     el('tr', { class: 'adi-cab2' },
       ...Array.from({ length: PUESTOS }, (_, i) => [el('th', { class: `p${i + 1}` }, 'Proveedor'), el('th', { class: `p${i + 1} num` }, 'Menor valor')])));
-  const filas = items.map((it) => el('tr', { class: it.activo ? '' : 'adi-inhabilitado' },
+  const filas = items.slice(0, visibles).map((it) => el('tr', { class: it.activo ? '' : 'adi-inhabilitado' },
     el('td', { class: 'adi-cod num' }, it.cod),
     el('td', { class: 'adi-descr' }, it.descripcion || '—',
       !it.activo ? el('small', { class: 'adi-estado-inh' }, 'Inhabilitado') : null,
@@ -67,7 +69,12 @@ function pintarTabla() {
   const cols = 2 + PUESTOS * 2 + (editar ? 1 : 0);
   const cuerpo = filas.length ? filas : [el('tr', {}, el('td', { colspan: cols, class: 'adi-vacia' },
     datos.items.length ? 'Ningún producto coincide con la búsqueda.' : 'La lista está vacía. Pulse «Agregar» o suba un Excel con CÓDIGO y DESCRIPCIÓN.'))];
-  $('#adi-tabla').replaceChildren(cab, el('tbody', {}, ...cuerpo));
+  const faltan = items.length - Math.min(visibles, items.length);
+  const pie = faltan > 0 ? el('tfoot', {}, el('tr', {}, el('td', { colspan: cols, class: 'adi-mas' },
+    `Mostrando ${fmtNum(visibles)} de ${fmtNum(items.length)} productos. `,
+    el('button', { class: 'btn btn-fantasma', type: 'button', onclick: () => { visibles += POR_PAGINA * 3; pintarTabla(); } }, `Ver ${fmtNum(Math.min(faltan, POR_PAGINA * 3))} más`),
+    el('span', { class: 'adi-mas-nota' }, ' · Use el buscador para encontrar uno en particular, o «Descargar Excel» para verlos todos.')))) : null;
+  $('#adi-tabla').replaceChildren(cab, el('tbody', {}, ...cuerpo), pie);
 }
 
 function pintar(d) { datos = d; pintarKpis(); pintarTabla(); }
@@ -142,8 +149,9 @@ async function guardar(e) {
 }
 
 export function montarAdicionales() {
-  $('#adi-buscar').addEventListener('input', pintarTabla);
-  $('#adi-ver-inh').addEventListener('change', pintarTabla);
+  const reiniciar = () => { visibles = POR_PAGINA; pintarTabla(); };
+  $('#adi-buscar').addEventListener('input', reiniciar);
+  $('#adi-ver-inh').addEventListener('change', reiniciar);
   $('#adi-agregar').addEventListener('click', abrirVentana);
   $$('#dlg-adicional .adi-pestanas [data-modo]').forEach((b) => b.addEventListener('click', () => elegirModo(b.dataset.modo)));
   $('#adi-pegar').addEventListener('input', contarPegadas);

@@ -83,3 +83,12 @@ def test_inhabilitar_no_borra_y_no_cuenta_ni_sale_en_el_excel(cliente):
     # volver a subirlo lo habilita de nuevo
     r = cliente.post("/api/adicionales", json={"filas": [{"cod": "y1"}]}).json()
     assert next(x for x in r["items"] if x["cod"] == "Y1")["activo"] is True and r["inhabilitados"] == 0
+
+
+def test_limites_25_mb_y_100_000_productos(cliente):
+    from app.services import adicionales, cargas, tablas
+
+    assert adicionales.MAX_BYTES == cargas.MAX_BYTES == tablas.MAX_BYTES == 25 * 1024 * 1024
+    assert adicionales.MAX_FILAS == cargas.MAX_FILAS == 100_000
+    r = cliente.post("/api/adicionales/archivo", params={"nombre": "g.xlsx"}, content=b"x" * (26 * 1024 * 1024))
+    assert r.status_code == 413 and "25 MB" in r.json()["detail"]
