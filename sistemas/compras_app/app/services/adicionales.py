@@ -124,13 +124,20 @@ def agregar(con: sqlite3.Connection, filas: list[dict], usuario: str | None) -> 
 def guardar_libres(con: sqlite3.Connection, filas: list[dict], origen: str, archivo: str | None, usuario: str | None) -> int:
     """Guarda ofertas que el tablero no tomó: [{cod, cod_empresa, valor, presentacion?, descripcion?}]. La más reciente de cada
     (producto, proveedor) reemplaza a la anterior. No hace commit (lo hace quien llama). Devuelve cuántas guardó."""
-    n = 0
+    # Dentro de un mismo archivo, el mismo producto y proveedor repetido: se usa el más barato (la misma regla del tablero).
+    mejores: dict[tuple[str, str], dict] = {}
     for f in filas:
         cod = nz.codigo_producto(f.get("cod"))
         emp = nz.codigo_empresa(f.get("cod_empresa"))
         valor = f.get("valor")
         if not cod or not emp or valor is None or valor <= 0:
             continue
+        clave = (nz.clave_codigo(cod), emp)
+        if clave not in mejores or valor < mejores[clave]["valor"]:
+            mejores[clave] = {**f, "cod": cod, "cod_empresa": emp, "valor": valor}
+    n = 0
+    for f in mejores.values():
+        cod, emp, valor = f["cod"], f["cod_empresa"], f["valor"]
         con.execute(
             "INSERT INTO ofertas_libres (clave, cod_producto, cod_empresa, valor, presentacion, descripcion, origen, archivo, usuario, fecha)"
             " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))"

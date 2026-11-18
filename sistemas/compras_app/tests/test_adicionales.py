@@ -141,3 +141,12 @@ def test_oferta_libre_mas_reciente_reemplaza_la_anterior(cliente):
         subir(cliente, "cotizaciones", excel_bytes([{"COD_EMPRESA": "2", "COD_PRODUCTO": "X-LIB", "VALOR": valor}]), aplicar=True)
     cliente.post("/api/adicionales", json={"filas": [{"cod": "X-LIB"}]})
     assert [p["valor"] for p in _item(cliente, "X-LIB")["proveedores"]] == [800]
+
+
+def test_mismo_producto_y_proveedor_repetido_en_el_archivo_usa_el_mas_barato(cliente):
+    from tests.test_cargas import subir
+
+    filas = [{"COD_EMPRESA": "1", "COD_PRODUCTO": "R-1", "VALOR": v} for v in (9800, 11000)]
+    subir(cliente, "cotizaciones", excel_bytes(filas), aplicar=True)
+    cliente.post("/api/adicionales", json={"filas": [{"cod": "R-1"}]})
+    assert [p["valor"] for p in _item(cliente, "R-1")["proveedores"]] == [9800]
