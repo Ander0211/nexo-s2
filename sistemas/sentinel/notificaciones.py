@@ -194,8 +194,7 @@ def _frases(restablecida: bool) -> tuple[str, str]:
     if restablecida:
         return ("se restableció su clave de acceso a",
                 "Su clave anterior ya no sirve: entre con esta. Si no esperaba este cambio, avise al administrador. No comparta este mensaje.")
-    return ("ya tiene acceso a",
-            "Entre con este usuario y esta clave; si quiere, puede cambiarla después en «Mi clave». No comparta este mensaje.")
+    return ("ya tiene acceso a", "")  # usuario nuevo: el mensaje termina en los datos de acceso
 
 
 def _rol(rol: str) -> str:
@@ -205,7 +204,7 @@ def _rol(rol: str) -> str:
 def mensaje(nombre, usuario, clave, url, rol, restablecida=False) -> str:
     apertura, cierre = _frases(restablecida)
     return nexo_correo.encabezado_texto("sentinel") + "\n\n" + (f"Hola {nombre}, {apertura} SENTINEL PABON, copias de seguridad (Clínica Cardioneurovascular Pabón).\n\n"
-            f"Dirección: {url}\nUsuario: {usuario}\nClave: {clave}\nPerfil: {_rol(rol)}\n\n{cierre}")
+            f"Dirección: {url}\nUsuario: {usuario}\nClave: {clave}\nPerfil: {_rol(rol)}" + (f"\n\n{cierre}" if cierre else ""))
 
 
 def mensaje_html(nombre, usuario, clave, url, rol, restablecida=False) -> str:
@@ -221,7 +220,7 @@ def mensaje_html(nombre, usuario, clave, url, rol, restablecida=False) -> str:
             f'<tr><td style="padding:4px 18px 4px 0;color:#5f6b7a">Usuario</td><td><b>{e(usuario)}</b></td></tr>'
             f'<tr><td style="padding:4px 18px 4px 0;color:#5f6b7a">Clave</td><td><b style="font-family:Consolas,monospace;font-size:16px">{e(clave)}</b></td></tr>'
             f'<tr><td style="padding:4px 18px 4px 0;color:#5f6b7a">Perfil</td><td>{e(_rol(rol))}</td></tr></table>'
-            f'{boton}<p style="font-size:13px;color:#5f6b7a">{e(cierre)}</p></div>')
+            f'{boton}' + (f'<p style="font-size:13px;color:#5f6b7a">{e(cierre)}</p>' if cierre else "") + '</div>')
 
 
 def enlace_whatsapp(celular: str, texto: str) -> str:
