@@ -810,11 +810,14 @@ async function arrancar() {
   // Enlace del correo («/?ingresar=1»): SIEMPRE pide usuario y clave, aunque en este navegador ya hubiera una sesión
   // abierta (p. ej. la del administrador). Se cierra esa sesión y se limpia la dirección: así, al recargar después de
   // entrar, no se vuelve a cerrar.
-  if (new URLSearchParams(location.search).has('ingresar')) {
+  const enlace = new URLSearchParams(location.search);
+  if (enlace.has('ingresar')) {
+    const usuarioEnlace = (enlace.get('usuario') || '').trim();
     history.replaceState(null, '', location.pathname + location.hash);
     try { await api.salir(); } catch { /* no había sesión */ }
-    sessionStorage.setItem('aviso-login', 'Ingresa con el usuario y la clave que te enviamos.');
+    sessionStorage.setItem('aviso-login', usuarioEnlace ? 'Escribe la clave temporal que te enviamos.' : 'Ingresa con el usuario y la clave que te enviamos.');
     mostrarLogin();
+    if (usuarioEnlace) { $('#login-usuario').value = usuarioEnlace; $('#login-clave').focus(); } // usuario ya escrito, como en SENTINEL
     return;
   }
   let usuario = null;

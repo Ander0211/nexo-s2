@@ -65,6 +65,8 @@ COLUMNAS = {
         "COD_EMPRESA": ("COD_EMPRESA", "CODIGO_EMPRESA", "COD_PROVEEDOR"),
         "EMPRESA": ("NOMBRE_EMPRESA", "EMPRESA", "PROVEEDOR", "NOMBRE_PROVEEDOR"),
         "PRESENTACION": ("PRESENTACION",),
+        # Opcional: la descripción del producto (sirve a «Adicionales» cuando el producto no está en el catálogo).
+        "DESCRIPCION": ("DESCRIPCION", "DESCRIPCION_PRODUCTO", "NOMBRE_PRODUCTO"),
         # Opcional: cuántas unidades PUEDE entregar el proveedor de este producto (la ficha FR-GDS-07 la trae como «CANTIDAD DISPONIBLE PROVEEDOR»).
         "DISPONIBLE": (
             "CANTIDAD_DISPONIBLE",
@@ -129,6 +131,7 @@ def _leer_ficha(contenido: bytes) -> pd.DataFrame | None:
                         "disponible": next(
                             (i for i, x in enumerate(nombres) if x.startswith("CANTIDAD_DISPONIBLE")), None
                         ),
+                        "descripcion": next((i for i, x in enumerate(nombres) if x.startswith("DESCRIPCION")), None),
                     }
                 continue
             primera = fila[0] if fila else None
@@ -148,6 +151,11 @@ def _leer_ficha(contenido: bytes) -> pd.DataFrame | None:
                 if columnas["disponible"] is not None and len(fila) > columnas["disponible"]
                 else None
             )
+            descripcion = (
+                fila[columnas["descripcion"]]
+                if columnas["descripcion"] is not None and len(fila) > columnas["descripcion"]
+                else None
+            )
             datos.append(
                 [
                     n,
@@ -155,6 +163,7 @@ def _leer_ficha(contenido: bytes) -> pd.DataFrame | None:
                     None if precio is None else str(precio).strip(),
                     None if empaque is None else str(empaque).strip(),
                     None if disponible is None else str(disponible).strip(),
+                    None if descripcion is None else str(descripcion).strip(),
                 ]
             )
         if columnas is None:
@@ -165,10 +174,10 @@ def _leer_ficha(contenido: bytes) -> pd.DataFrame | None:
             cod_empresa = str(valor).strip() if valor not in (None, "") else None
     finally:
         wb.close()
-    df = pd.DataFrame(datos, columns=["FILA", "COD_PRODUCTO", "VALOR", "PRESENTACION", "DISPONIBLE"], dtype=object)
+    df = pd.DataFrame(datos, columns=["FILA", "COD_PRODUCTO", "VALOR", "PRESENTACION", "DISPONIBLE", "DESCRIPCION"], dtype=object)
     df["COD_EMPRESA"] = cod_empresa
     df["EMPRESA"] = None
-    return df[["COD_PRODUCTO", "VALOR", "COD_EMPRESA", "EMPRESA", "PRESENTACION", "DISPONIBLE", "FILA"]]
+    return df[["COD_PRODUCTO", "VALOR", "COD_EMPRESA", "EMPRESA", "PRESENTACION", "DISPONIBLE", "DESCRIPCION", "FILA"]]
 
 
 def leer_archivo(contenido: bytes, nombre: str, tipo: str) -> pd.DataFrame:
@@ -244,6 +253,7 @@ def _resultado(tipo: str, aplicar: bool, filas: int) -> dict:
         "omitidas": 0,  # cotizaciones sin precio (el proveedor no cotizó ese producto)
         "repetidas": 0,  # cotizaciones repetidas dentro del archivo (se usa la más barata)
         "no_cambian_ranking": 0,  # cotizaciones que no cambian el ranking (el proveedor ya ofrecía igual o más barato)
+        "a_adicionales": 0,  # ofertas de productos que no están en el catálogo: no entran al tablero, quedan en «Adicionales»
         "total_errores": 0,  # cuántas filas tienen error (no se cargan)
         "errores": [],  # detalle de las primeras filas con error: {"fila": 7, "motivo": "..."}
         "avisos": [],  # notas informativas para el usuario
@@ -488,6 +498,7 @@ def procesar_cotizaciones(
     cods_empresa = {r["cod"] for r in empresas}
     cod_por_nombre = {nz.clave_nombre(r["nombre"]): r["cod"] for r in empresas}
 
+    libres: list[dict] = []  # ofertas de productos fuera del catálogo → «Adicionales» (no entran al tablero)
     # Paso 1: validar cada fila y quedarse con la oferta más barata de cada (producto, proveedor).
     mejores: dict[
         tuple[str, str], tuple[float, str | None, float | None]
@@ -517,15 +528,19 @@ def procesar_cotizaciones(
             if disponible is None or disponible < 0:
                 _error(res, fila, f"La cantidad disponible «{crudo_disp}» no es un número válido.")
                 continue
+        cod_e, nombre_e = nz.codigo_empresa(r.COD_EMPRESA), nz.texto(r.EMPRESA)
         if cod_producto not in productos:
-            _error(
-                res,
-                fila,
-                f"El producto {cod_producto} no existe en el catálogo (créalo antes en la pestaña Productos).",
-            )
+            # El tablero no lo toma (no está en el catálogo), pero la oferta es real: se guarda aparte para «Adicionales».
+            prov = (cod_e if cod_e in cods_empresa else None) if cod_e else (
+                cod_por_nombre.get(nz.clave_nombre(nombre_e)) if nombre_e else (defecto["cod"] if defecto else None))
+            if prov:
+                libres.append({"cod": cod_producto, "cod_empresa": prov, "valor": valor, "presentacion": nz.texto(r.PRESENTACION),
+                               "descripcion": nz.texto(getattr(r, "DESCRIPCION", None))})
+                res["a_adicionales"] += 1
+            else:
+                _error(res, fila, f"El producto {cod_producto} no existe en el catálogo (créalo antes en la pestaña Productos).")
             continue
 
-        cod_e, nombre_e = nz.codigo_empresa(r.COD_EMPRESA), nz.texto(r.EMPRESA)
         if cod_e:
             if cod_e not in cods_empresa:
                 _error(res, fila, f"El proveedor {cod_e} no existe (créalo antes en la pestaña Proveedores).")
@@ -586,6 +601,16 @@ def procesar_cotizaciones(
 
     if defecto and defecto["nuevo"]:
         res["avisos"].append(f"Se {'creó' if aplicar else 'creará'} el proveedor nuevo «{defecto['nombre']}».")
+    if res["a_adicionales"]:
+        res["avisos"].append(
+            f"{res['a_adicionales']} oferta(s) de productos que no están en el catálogo no entran al tablero: "
+            f"{'quedaron' if aplicar else 'quedarán'} en «Adicionales» con su proveedor y valor."
+        )
+    if aplicar and libres:
+        from . import adicionales  # aquí: evita importaciones circulares
+
+        with con:
+            adicionales.guardar_libres(con, libres, "Cargar datos", None, None)
 
     if aplicar and operaciones:
         with con:

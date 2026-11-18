@@ -63,6 +63,7 @@ def guardar_subida(
         str, tuple[float, str | None, float | None]
     ] = {}  # producto → (valor, presentación, cantidad disponible)
     fuera = 0
+    libres: list[dict] = []  # lo que ofreció pero hoy no se necesita: no entra al tablero, queda en «Adicionales»
     for r in df.itertuples(index=False):
         cod = nz.codigo_producto(r.COD_PRODUCTO)
         if not cod:
@@ -89,7 +90,9 @@ def guardar_subida(
                 continue
         oficial = necesarios.get(nz.clave_codigo(cod))
         if oficial is None:
-            fuera += 1  # un producto que hoy no se necesita (o que no existe)
+            fuera += 1  # un producto que hoy no se necesita (o que no existe): no entra al tablero
+            libres.append({"cod": cod, "cod_empresa": cod_empresa, "valor": valor, "presentacion": nz.texto(r.PRESENTACION),
+                           "descripcion": nz.texto(getattr(r, "DESCRIPCION", None))})
             continue
         previa = nz.texto(r.PRESENTACION)
         if oficial in mejores:
@@ -97,6 +100,11 @@ def guardar_subida(
             if valor >= mejores[oficial][0]:
                 continue
         mejores[oficial] = (valor, previa, disponible)
+    if libres:  # se guardan aunque la ficha no traiga nada de lo que se necesita hoy
+        from . import adicionales
+
+        with con:
+            adicionales.guardar_libres(con, libres, "Ficha del proveedor", nombre, usuario)
     if not mejores:
         detalle = f" ({fuera} producto(s) de la ficha no están en lo que necesitamos hoy.)" if fuera else ""
         raise PendienteError(

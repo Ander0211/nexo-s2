@@ -174,10 +174,12 @@ def direccion_alcanzable(base: str) -> str:
     return urlunsplit(partes)
 
 
-def enlace_de_ingreso(base: str) -> str:
+def enlace_de_ingreso(base: str, usuario: str | None = None) -> str:
     """La dirección que va en el mensaje. Termina en «/?ingresar=1»: al abrirla, la página cierra cualquier sesión que
-    hubiera en ese navegador y pide usuario y clave (así no entra directo como otra persona, p. ej. el administrador)."""
-    return direccion_alcanzable(base).rstrip("/") + "/?ingresar=1"
+    hubiera en ese navegador y pide usuario y clave (así no entra directo como otra persona, p. ej. el administrador).
+    Con `usuario`, la pantalla de ingreso lo trae ya escrito (como SENTINEL)."""
+    enlace = direccion_alcanzable(base).rstrip("/") + "/?ingresar=1"
+    return enlace + "&usuario=" + quote(usuario) if usuario else enlace
 
 
 def correo_configurado() -> bool:
@@ -244,9 +246,9 @@ def mensaje(nombre: str, usuario: str, clave: str, url: str, restablecida: bool 
     apertura, cierre = _frases(restablecida)
     return nexo_correo.encabezado_texto("sumipabon") + "\n\n" + (
         f"Hola {nombre}, {apertura} SUMIPABON (Clínica Cardioneurovascular Pabón).\n\n"
-        f"Dirección: {url}\n"
         f"Usuario: {usuario}\n"
         f"Clave temporal: {clave}\n\n"
+        f"Ingresa aquí: {url}\n\n"
         f"{cierre}"
     )
 
@@ -517,5 +519,5 @@ def enviar_credenciales(u: dict, clave: str, url: str, restablecida: bool = Fals
             resultado["whatsapp"] = {"estado": ERROR, "detalle": str(e)}
 
     if u.get("celular") and resultado["whatsapp"]["estado"] != ENVIADO:
-        resultado["enlace_whatsapp"] = enlace_whatsapp(u["celular"], texto)
+        resultado["enlace_whatsapp"] = enlace_whatsapp(u["celular"], texto + "\n\n" + nexo_correo.PIE)
     return resultado

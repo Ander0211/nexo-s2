@@ -92,3 +92,52 @@ def test_limites_25_mb_y_100_000_productos(cliente):
     assert adicionales.MAX_FILAS == cargas.MAX_FILAS == 100_000
     r = cliente.post("/api/adicionales/archivo", params={"nombre": "g.xlsx"}, content=b"x" * (26 * 1024 * 1024))
     assert r.status_code == 413 and "25 MB" in r.json()["detail"]
+
+
+# ------------------------------------------------------------------ Adicionales es libre: ofertas que el tablero no toma
+def _item(cliente, cod):
+    return next(x for x in cliente.get("/api/adicionales").json()["items"] if x["cod"] == cod)
+
+
+def test_cargar_datos_con_producto_fuera_del_catalogo_queda_en_adicionales_y_no_en_el_tablero(cliente):
+    from tests.test_cargas import subir
+
+    archivo = excel_bytes([
+        {"COD_EMPRESA": "1", "COD_PRODUCTO": "NUEVO-77", "DESCRIPCION": "TAPABOCAS N95", "VALOR": 1500, "PRESENTACION": "CAJA X20"},
+        {"COD_EMPRESA": "3", "COD_PRODUCTO": "NUEVO-77", "VALOR": 1200},
+    ])
+    revisado = subir(cliente, "cotizaciones", archivo).json()
+    assert revisado["a_adicionales"] == 2 and revisado["total_errores"] == 0
+    assert any("Adicionales" in a for a in revisado["avisos"])
+    assert cliente.get("/api/adicionales").json()["items"] == []  # revisar no guarda nada
+    subir(cliente, "cotizaciones", archivo, aplicar=True)
+    assert all(p["cod"] != "NUEVO-77" for p in cliente.get("/api/productos").json()["items"])  # el tablero no lo toma
+    cliente.post("/api/adicionales", json={"filas": [{"cod": "nuevo-77"}]})
+    provs = _item(cliente, "nuevo-77")["proveedores"]
+    assert [(p["nombre"], p["valor"]) for p in provs] == [("GAMA LTDA", 1200), ("ALFA SAS", 1500)]
+    assert all(p["fuera_del_tablero"] and p["origen"] == "Cargar datos" for p in provs)
+    # también se encuentra por la descripción que traía el archivo
+    cliente.post("/api/adicionales", json={"filas": [{"cod": "OTRO-CODIGO", "descripcion": "tapabocas  n95"}]})
+    assert _item(cliente, "OTRO-CODIGO")["proveedores"][0]["valor"] == 1200
+
+
+def test_ficha_del_proveedor_con_producto_que_hoy_no_se_necesita_queda_en_adicionales(cliente, como):
+    from tests.test_ofertas_proveedor import _gama, _subir
+
+    j = _subir(_gama(como), excel_bytes([{"COD_PRODUCTO": "A1", "VALOR": 70}, {"COD_PRODUCTO": "B2", "VALOR": 5},
+                                         {"COD_PRODUCTO": "LIBRE-1", "VALOR": 9}])).json()
+    assert j["guardadas"] == 1 and j["fuera_de_lista"] == 2  # el tablero sigue igual: solo toma A1
+    cliente.post("/api/adicionales", json={"filas": [{"cod": "LIBRE-1"}, {"cod": "B2"}]})
+    libre = _item(cliente, "LIBRE-1")["proveedores"]
+    assert libre == [{**libre[0], "nombre": "GAMA LTDA", "valor": 9, "fuera_del_tablero": True, "origen": "Ficha del proveedor"}]
+    b2 = _item(cliente, "B2")["proveedores"]  # B2 ya tenía ofertas del tablero: compiten todas, cada proveedor con su menor valor
+    assert b2[0]["valor"] == 5 and b2[0]["nombre"] == "GAMA LTDA" and b2[0]["fuera_del_tablero"] is True
+
+
+def test_oferta_libre_mas_reciente_reemplaza_la_anterior(cliente):
+    from tests.test_cargas import subir
+
+    for valor in (900, 800):
+        subir(cliente, "cotizaciones", excel_bytes([{"COD_EMPRESA": "2", "COD_PRODUCTO": "X-LIB", "VALOR": valor}]), aplicar=True)
+    cliente.post("/api/adicionales", json={"filas": [{"cod": "X-LIB"}]})
+    assert [p["valor"] for p in _item(cliente, "X-LIB")["proveedores"]] == [800]

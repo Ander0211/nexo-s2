@@ -278,7 +278,7 @@ def test_whatsapp_con_plantilla_envia_las_cuatro_variables(cliente, whatsapp, mo
     assert cuerpo["to"] == "573001234567" and cuerpo["type"] == "template"
     assert cuerpo["template"]["name"] == "acceso_sumipabon" and cuerpo["template"]["language"]["code"] == "es"
     valores = [p["text"] for p in cuerpo["template"]["components"][0]["parameters"]]
-    assert valores == ["Ana López", "ana.lopez", r["clave_temporal"], "http://compras.clinica.local/?ingresar=1"]
+    assert valores == ["Ana López", "ana.lopez", r["clave_temporal"], "http://compras.clinica.local/?ingresar=1&usuario=ana.lopez"]
 
 
 def test_whatsapp_sin_plantilla_envia_texto_simple(cliente, whatsapp):
@@ -446,7 +446,7 @@ def test_el_correo_oculta_la_ip_detras_de_un_boton(cliente, smtp, monkeypatch):
     monkeypatch.setenv("COMPRAS_URL_PUBLICA", "http://172.16.21.121:8000")
     r = cliente.post("/api/usuarios", json=NUEVO).json()
     cuerpo = _html(smtp["mensajes"][0])
-    assert 'href="http://172.16.21.121:8000/?ingresar=1"' in cuerpo and "Entrar a SUMIPABON" in cuerpo
+    assert 'href="http://172.16.21.121:8000/?ingresar=1&amp;usuario=ana.lopez"' in cuerpo and "Entrar a SUMIPABON" in cuerpo
     visible = re.sub(r"<[^>]+>", " ", cuerpo)  # lo que se ve: sin las etiquetas (y por tanto sin el href)
     assert "172.16.21.121" not in visible
     assert "ana.lopez" in visible and r["clave_temporal"] in visible
@@ -471,8 +471,8 @@ def test_el_enlace_del_mensaje_siempre_abre_la_pantalla_de_ingreso(cliente, smtp
     cliente.post(
         "/api/usuarios", json=NUEVO
     )  # sin COMPRAS_URL_PUBLICA: usa la dirección con que entró el administrador
-    assert "http://testserver/?ingresar=1" in _texto(smtp["mensajes"][0])
-    assert 'href="http://testserver/?ingresar=1"' in _html(smtp["mensajes"][0])
+    assert "http://testserver/?ingresar=1&usuario=ana.lopez" in _texto(smtp["mensajes"][0])  # con el usuario ya escrito
+    assert 'href="http://testserver/?ingresar=1&amp;usuario=ana.lopez"' in _html(smtp["mensajes"][0])
     monkeypatch.setenv("COMPRAS_URL_PUBLICA", "http://sumipabon:8000/")
     otro = {**NUEVO, "usuario": "otra.persona", "correo": "otra@clinica.com", "celular": "3100000004"}
     r = cliente.post("/api/usuarios", json=otro).json()

@@ -84,3 +84,16 @@ def test_la_clave_temporal_pegada_con_espacio_tambien_sirve_al_cambiarla(cliente
     r = anonimo.put("/api/sesion/clave", json={"actual": temporal + " \n", "nueva": CLAVE_NUEVA})
     assert r.status_code == 200, r.text
     assert entrar(TestClient(anonimo.app), "pegado2", CLAVE_NUEVA).status_code == 200
+
+
+def test_mensaje_igual_a_sentinel_con_enlace_al_final_y_pie_de_nexo(cliente):
+    """WhatsApp de SUMIPABON: «Ingresa aquí» después de los datos, el usuario ya escrito en el enlace y el pie de Nexo S²."""
+    from urllib.parse import unquote
+
+    r = cliente.post("/api/usuarios", json={"usuario": "wa.igual", "nombre": "Wa Igual", "rol": "consulta",
+                                             "correo": "wa.igual@prueba.com", "celular": "3207778811"}).json()
+    texto = unquote(r["envio"]["enlace_whatsapp"].split("text=", 1)[1])
+    assert "Dirección:" not in texto
+    assert texto.index("Clave temporal:") < texto.index("Ingresa aquí:") < texto.index("elegir tu propia clave")
+    assert "/?ingresar=1&usuario=wa.igual" in texto
+    assert texto.rstrip().endswith("SUMIPABON y SENTINEL PABON de la Clínica Cardioneurovascular Pabón.")

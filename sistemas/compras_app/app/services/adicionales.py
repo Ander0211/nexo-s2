@@ -9,6 +9,10 @@ Cómo se busca cada producto en las ofertas:
   2. si ese código no tiene ofertas, por su DESCRIPCIÓN exacta (sin tildes, mayúsculas ni espacios de más).
 Cada proveedor cuenta una sola vez, con su oferta más baja (la misma regla del tablero: ranking.construir_ranking).
 
+ADICIONALES ES LIBRE: además de las ofertas del tablero, busca en las OFERTAS LIBRES (tabla ofertas_libres): precios que un proveedor
+ofreció pero que el tablero no toma por sus reglas (producto que no está en el catálogo al «Cargar datos», o que hoy no se necesita en
+la ficha del proveedor externo). Esas ofertas se muestran aquí, marcadas «fuera del tablero», y nunca entran al tablero ni a la OC.
+
 Es una lista de CONSULTA: no cambia el tablero, las ofertas ni la orden de compra.
 """
 
@@ -117,6 +121,29 @@ def agregar(con: sqlite3.Connection, filas: list[dict], usuario: str | None) -> 
     return {"nuevos": nuevos, "actualizados": actualizados}
 
 
+def guardar_libres(con: sqlite3.Connection, filas: list[dict], origen: str, archivo: str | None, usuario: str | None) -> int:
+    """Guarda ofertas que el tablero no tomó: [{cod, cod_empresa, valor, presentacion?, descripcion?}]. La más reciente de cada
+    (producto, proveedor) reemplaza a la anterior. No hace commit (lo hace quien llama). Devuelve cuántas guardó."""
+    n = 0
+    for f in filas:
+        cod = nz.codigo_producto(f.get("cod"))
+        emp = nz.codigo_empresa(f.get("cod_empresa"))
+        valor = f.get("valor")
+        if not cod or not emp or valor is None or valor <= 0:
+            continue
+        con.execute(
+            "INSERT INTO ofertas_libres (clave, cod_producto, cod_empresa, valor, presentacion, descripcion, origen, archivo, usuario, fecha)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))"
+            " ON CONFLICT(clave, cod_empresa) DO UPDATE SET cod_producto = excluded.cod_producto, valor = excluded.valor,"
+            " presentacion = excluded.presentacion, descripcion = COALESCE(excluded.descripcion, ofertas_libres.descripcion),"
+            " origen = excluded.origen, archivo = excluded.archivo, usuario = excluded.usuario, fecha = excluded.fecha",
+            (nz.clave_codigo(cod), cod, emp, float(valor), nz.texto(f.get("presentacion")), nz.texto(f.get("descripcion")),
+             origen, (archivo or "")[:200] or None, usuario),
+        )
+        n += 1
+    return n
+
+
 def cambiar_activo(con: sqlite3.Connection, id_: int, activo: bool) -> None:
     """Inhabilitar (queda en la lista, en rojo, y no cuenta en el resumen ni en el Excel) o volver a habilitar."""
     if con.execute("UPDATE adicionales SET activo = ? WHERE id = ?", (int(activo), id_)).rowcount == 0:
@@ -141,10 +168,17 @@ def listar(con: sqlite3.Connection) -> dict:
     empresas = {r["cod"]: r["nombre"] for r in con.execute("SELECT cod, nombre FROM empresas")}
     ofertas: dict[str, list] = {}
     for o in con.execute("SELECT id, cod_producto, cod_empresa, valor, presentacion, disponible FROM ofertas"):
-        ofertas.setdefault(nz.clave_codigo(o["cod_producto"]), []).append(dict(o))
+        ofertas.setdefault(nz.clave_codigo(o["cod_producto"]), []).append({**dict(o), "libre": False})
+    # Ofertas que el tablero no tomó (Adicionales es libre): compiten aquí con las demás, cada proveedor con su menor valor.
+    for i, o in enumerate(con.execute("SELECT clave, cod_producto, cod_empresa, valor, presentacion, origen, fecha FROM ofertas_libres")):
+        ofertas.setdefault(o["clave"], []).append({"id": -(i + 1), "cod_producto": o["cod_producto"], "cod_empresa": o["cod_empresa"],
+                                                   "valor": o["valor"], "presentacion": o["presentacion"], "disponible": None,
+                                                   "libre": True, "origen": o["origen"], "fecha": o["fecha"]})
     por_descripcion: dict[str, str] = {}
     for p in con.execute("SELECT cod, descripcion FROM productos"):
         por_descripcion.setdefault(nz.clave_busqueda(p["descripcion"]), p["cod"])
+    for p in con.execute("SELECT cod_producto, descripcion FROM ofertas_libres WHERE descripcion IS NOT NULL"):
+        por_descripcion.setdefault(nz.clave_busqueda(p["descripcion"]), p["cod_producto"])
 
     items, con_oferta, activos = [], 0, 0
     for r in con.execute("SELECT id, cod, descripcion, usuario, fecha, activo FROM adicionales ORDER BY activo DESC, id"):
@@ -157,7 +191,8 @@ def listar(con: sqlite3.Connection) -> dict:
         top = ranking.construir_ranking(lista)[:PUESTOS]
         proveedores = [
             {"puesto": o["puesto"], "cod_empresa": o["cod_empresa"], "nombre": empresas.get(o["cod_empresa"]) or f"Proveedor {o['cod_empresa']}",
-             "valor": o["valor"], "presentacion": o.get("presentacion")}
+             "valor": o["valor"], "presentacion": o.get("presentacion"),
+             "fuera_del_tablero": o.get("libre", False), "origen": o.get("origen"), "fecha": o.get("fecha")}
             for o in top
         ]
         activo = bool(r["activo"])

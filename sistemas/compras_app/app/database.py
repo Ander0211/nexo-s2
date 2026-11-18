@@ -196,6 +196,23 @@ CREATE TABLE IF NOT EXISTS adicionales (
     activo      INTEGER NOT NULL DEFAULT 1                -- 0 = inhabilitado (se ve en rojo; no se borra)
 );
 
+-- OFERTAS LIBRES: precios que un proveedor ofreció pero que el TABLERO NO TOMA por sus reglas (producto que no está en el catálogo al
+-- «Cargar datos», o que hoy no se necesita en la ficha del proveedor externo). No compiten en el tablero ni en la OC: solo los usa
+-- «Adicionales» para mostrar quién tiene un producto y a qué valor. Una por (producto, proveedor): la más reciente reemplaza a la anterior.
+CREATE TABLE IF NOT EXISTS ofertas_libres (
+    clave        TEXT NOT NULL,                       -- código del producto normalizado (para buscar)
+    cod_producto TEXT NOT NULL,
+    cod_empresa  TEXT NOT NULL,
+    valor        REAL NOT NULL,
+    presentacion TEXT,
+    descripcion  TEXT,
+    origen       TEXT NOT NULL,                       -- «Cargar datos» o «Ficha del proveedor»
+    archivo      TEXT,
+    usuario      TEXT,
+    fecha        TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    PRIMARY KEY (clave, cod_empresa)
+);
+
 -- META: datos sueltos, por ejemplo la fecha de la última importación.
 CREATE TABLE IF NOT EXISTS meta (
     clave TEXT PRIMARY KEY,

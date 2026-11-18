@@ -186,7 +186,7 @@ FILAS_COTIZACIONES = [
     {"COD_EMPRESA": "3", "COD_PRODUCTO": "C3", "VALOR": 40, "PRESENTACION": None},  # fila 3: nueva
     {"COD_EMPRESA": "1", "COD_PRODUCTO": "D4", "VALOR": None, "PRESENTACION": None},  # fila 4: sin precio → se omite
     {"COD_EMPRESA": "1", "COD_PRODUCTO": "B2", "VALOR": 0, "PRESENTACION": None},  # fila 5: precio 0 → se omite
-    {"COD_EMPRESA": "1", "COD_PRODUCTO": "NOEXISTE", "VALOR": 9, "PRESENTACION": None},  # fila 6: error, producto
+    {"COD_EMPRESA": "1", "COD_PRODUCTO": "NOEXISTE", "VALOR": 9, "PRESENTACION": None},  # fila 6: no está en el catálogo → «Adicionales»
     {"COD_EMPRESA": "999", "COD_PRODUCTO": "A1", "VALOR": 9, "PRESENTACION": None},  # fila 7: error, proveedor
     {"COD_EMPRESA": "1", "COD_PRODUCTO": "0041", "VALOR": "caro", "PRESENTACION": None},  # fila 8: error, precio
 ]
@@ -195,8 +195,8 @@ FILAS_COTIZACIONES = [
 def test_cotizaciones_con_columna_de_proveedor(cliente):
     """El archivo trae COD_EMPRESA: se crean ofertas 'subido', se omiten las sin precio y se informan los errores."""
     j = subir(cliente, "cotizaciones", excel_bytes(FILAS_COTIZACIONES)).json()
-    assert (j["nuevos"], j["omitidas"], j["total_errores"]) == (2, 2, 3)
-    assert {e["fila"] for e in j["errores"]} == {6, 7, 8}
+    assert (j["nuevos"], j["omitidas"], j["total_errores"], j["a_adicionales"]) == (2, 2, 2, 1)
+    assert {e["fila"] for e in j["errores"]} == {7, 8}  # la 6 no es error: no entra al tablero pero queda en «Adicionales»
     assert _ofertas_a1(cliente)[0][0] == "BETA SAS"  # revisar no cambió nada
 
     subir(cliente, "cotizaciones", excel_bytes(FILAS_COTIZACIONES), aplicar=True)

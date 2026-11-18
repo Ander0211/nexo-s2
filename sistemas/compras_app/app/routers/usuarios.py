@@ -21,10 +21,10 @@ from ..services import admin, notificaciones, seguridad
 router = APIRouter(prefix="/api/usuarios", tags=["usuarios"])
 
 
-def _direccion(request: Request) -> str:
+def _direccion(request: Request, usuario: str | None = None) -> str:
     """La dirección que va en el mensaje: COMPRAS_URL_PUBLICA si existe; si no, la que usó el administrador.
     Siempre abre la pantalla de ingreso (pide usuario y clave)."""
-    return notificaciones.enlace_de_ingreso(notificaciones.url_publica() or str(request.base_url))
+    return notificaciones.enlace_de_ingreso(notificaciones.url_publica() or str(request.base_url), usuario)
 
 
 def _proveedor_del_usuario(db, rol: str, cod_empresa: str | None, nuevo, actor: str) -> tuple[str | None, dict | None]:
@@ -63,7 +63,7 @@ def crear(body: UsuarioIn, request: Request, db: sqlite3.Connection = Depends(ge
         celular=body.celular,
         contacto_obligatorio=True,
     )
-    envio = notificaciones.enviar_credenciales(usuario, clave, _direccion(request))
+    envio = notificaciones.enviar_credenciales(usuario, clave, _direccion(request, usuario["usuario"]))
     return {"usuario": usuario, "clave_temporal": clave, "envio": envio, "proveedor_nuevo": proveedor_nuevo}
 
 
@@ -95,7 +95,7 @@ def editar(usuario_id: int, body: UsuarioEdit, request: Request, db: sqlite3.Con
 def restablecer(usuario_id: int, request: Request, db: sqlite3.Connection = Depends(get_db)):
     """Le pone una clave temporal nueva, cierra sus sesiones y se la envía por correo/WhatsApp si tiene esos datos."""
     usuario, clave = seguridad.restablecer_clave(db, usuario_id)
-    envio = notificaciones.enviar_credenciales(usuario, clave, _direccion(request), restablecida=True)
+    envio = notificaciones.enviar_credenciales(usuario, clave, _direccion(request, usuario["usuario"]), restablecida=True)
     return {"usuario": usuario, "clave_temporal": clave, "envio": envio}
 
 

@@ -36,7 +36,8 @@ function celdasProveedor(p, puesto) {
   }
   return [
     el('td', { class: `adi-prov p${puesto}` }, el('div', { class: 'adi-nombre', title: `Código ${p.cod_empresa}` }, p.nombre),
-      p.presentacion ? el('div', { class: 'adi-pres' }, p.presentacion) : null),
+      p.presentacion ? el('div', { class: 'adi-pres' }, p.presentacion) : null,
+      p.fuera_del_tablero ? el('span', { class: 'adi-libre', title: `Oferta que el tablero no toma (${p.origen || 'oferta libre'}${p.fecha ? ', ' + p.fecha.slice(0, 10) : ''}). No entra a la orden de compra.` }, 'Fuera del tablero') : null),
     el('td', { class: `adi-val p${puesto} num` }, fmtMoney(p.valor)),
   ];
 }
@@ -74,7 +75,7 @@ function pintarTabla() {
     `Mostrando ${fmtNum(visibles)} de ${fmtNum(items.length)} productos. `,
     el('button', { class: 'btn btn-fantasma', type: 'button', onclick: () => { visibles += POR_PAGINA * 3; pintarTabla(); } }, `Ver ${fmtNum(Math.min(faltan, POR_PAGINA * 3))} más`),
     el('span', { class: 'adi-mas-nota' }, ' · Use el buscador para encontrar uno en particular, o «Descargar Excel» para verlos todos.')))) : null;
-  $('#adi-tabla').replaceChildren(cab, el('tbody', {}, ...cuerpo), pie);
+  $('#adi-tabla').replaceChildren(...[cab, el('tbody', {}, ...cuerpo), pie].filter(Boolean)); // sin «Ver más», pie es null: no se agrega (si no, se vería «null»)
 }
 
 function pintar(d) { datos = d; pintarKpis(); pintarTabla(); }

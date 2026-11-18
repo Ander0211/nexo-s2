@@ -38,7 +38,7 @@ function mostrarResultado(r) {
     el('ul', { class: 'cifras-envio' },
       dato(`${fmtNum(r.guardadas)} producto(s) con precio`),
       r.omitidas > 0 && dato(`${fmtNum(r.omitidas)} sin precio (no los cotizaste)`),
-      r.fuera_de_lista > 0 && dato(`${fmtNum(r.fuera_de_lista)} que hoy no necesitamos (no se tuvieron en cuenta)`),
+      r.fuera_de_lista > 0 && dato(`${fmtNum(r.fuera_de_lista)} que hoy no necesitamos (quedan registrados como adicionales)`),
       r.repetidas > 0 && dato(`${fmtNum(r.repetidas)} repetido(s): se usó el más barato`)),
     r.total_errores > 0 && el('div', { class: 'resultado-error' },
       el('p', {}, icono('alerta', 16), ` ${fmtNum(r.total_errores)} fila(s) con error (no se enviaron):`),
