@@ -1,0 +1,70 @@
+/*
+ * CARGAR.CSS — PANEL «CARGAR DATOS»
+ * ====================================
+ * Estilos propios del panel «Cargar datos» (el <dialog id="dlg-cargar"> de index.html): las pestañas de arriba, la zona de arrastrar archivos,
+ * el resultado de la revisión (números y tabla de errores) y los formularios manuales.
+ * La estructura del panel (cabecera / cuerpo / pie) y los campos vienen de agregar.css;
+ * los colores y botones, de base.css; las pestañas (.pestanas), de componentes.css.
+ * Diseño plano: esquinas pequeñas, sin degradados.
+ */
+
+/* Franja de pestañas bajo la cabecera. */
+.pestanas-datos { padding: 12px 22px 0; }
+.pestanas-datos .pestanas { display: flex; }
+.pestanas-datos .pestana { flex: 1; justify-content: center; }
+
+/* Cada panel es una columna de bloques (.paso). */
+[role="tabpanel"] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.oculto { display: none; }
+
+/* Título de cada bloque: «A · Subir un Excel» / «B · Agregar a mano». */
+.titulo-bloque { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; font-size: 14px; font-weight: 700; }
+.titulo-bloque i { display: grid; place-items: center; width: 22px; height: 22px; border-radius: var(--radius-s); font-style: normal; font-size: 12px; color: #fff; background: var(--accent); }
+.subidor, .formulario { display: grid; gap: 12px; }
+
+/* ZONA DE ARRASTRAR: recuadro punteado; .sobre = hay un archivo encima (se resalta). */
+.zona { display: grid; justify-items: center; gap: 6px; padding: 24px 16px; border: 2px dashed var(--line-2); border-radius: var(--radius); background: var(--panel-2); color: var(--muted); text-align: center; cursor: pointer; transition: .15s; }
+.zona:hover, .zona.sobre { border-color: var(--accent); background: var(--hover); color: var(--text); }
+.zona strong { color: var(--text); font-size: 14px; }
+.zona span { font-size: 12.5px; }
+
+/* Texto de ayuda con las columnas que espera cada tipo de archivo. */
+.ayuda-columnas { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.55; }
+.ayuda-columnas b { color: var(--text); font-weight: 650; }
+.enlaces { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Archivo elegido: nombre, tamaño y botón «Quitar». */
+.archivo-elegido { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel-2); }
+.archivo-elegido .nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+.archivo-elegido .peso { color: var(--muted); font-size: 12px; }
+.revisando { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+
+/* RESULTADO de la revisión: casillas con los números. .ok = verde · .mal = rojo. */
+.estadisticas { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+.stat { padding: 10px 12px; border-radius: var(--radius-s); background: var(--panel-2); border: 1px solid var(--line); }
+.stat strong { display: block; font-size: 20px; letter-spacing: -.02em; }
+.stat span { color: var(--muted); font-size: 12px; }
+.stat.ok strong { color: var(--good); }
+.stat.mal strong { color: var(--bad); }
+.notas { display: grid; gap: 5px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 12.5px; }
+
+/* TABLA DE ERRORES: se desplaza si hay muchas; el encabezado queda fijo. */
+.tabla-errores { max-height: 190px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-s); }
+.tabla-errores table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tabla-errores th, .tabla-errores td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.tabla-errores th { position: sticky; top: 0; background: var(--panel-2); color: var(--muted); font-weight: 700; }
+.tabla-errores td:first-child { width: 56px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.acciones-carga { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+/* FORMULARIOS MANUALES: una etiqueta sobre cada campo; tres campos numéricos en una fila. */
+.grupo { display: grid; gap: 6px; min-width: 0; }
+.etiqueta-campo { color: var(--muted); font-size: 12.5px; font-weight: 650; }
+.fila-campos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.btn-peligro { background: transparent; border-color: #e3a0a0; color: var(--bad); }
+.btn-peligro:hover { background: #fbe6e6; border-color: var(--bad); }
+.tarjeta-info { display: grid; gap: 10px; justify-items: start; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+/* Texto a la izquierda del pie, junto al botón «Listo, cerrar». */
+.pista-pie { margin-right: auto; color: var(--muted); font-size: 12.5px; }
+
+@media (max-width: 640px) { .fila-campos { grid-template-columns: 1fr; } }

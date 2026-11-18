@@ -1,0 +1,8 @@
+# LIBRERÍAS PARA DESARROLLAR (todo lo de requirements.txt + herramientas de prueba y revisión)
+# (se instalan con:  pip install -r requirements-dev.txt)
+-r requirements.txt
+pytest>=8         # ejecuta las pruebas de tests/
+httpx>=0.27       # lo necesita FastAPI para probar la API sin encender el servidor
+ruff>=0.5         # revisa y formatea el código
+# opcional: pruebas de interfaz con navegador  ->  pip install playwright && playwright install chromium
+# playwright>=1.45

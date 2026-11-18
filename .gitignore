@@ -1,0 +1,29 @@
+# ============ Nexo S² (SUMIPABON + SENTINEL PABON) ============
+# --- Python / entornos ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# --- Registros de arranque de Nexo S² ---
+logs/
+
+# --- Configuración con claves (correo, WhatsApp, superusuario): NUNCA subir ---
+.env
+**/.env
+
+# --- SENTINEL: usuarios, sesiones y auditoría (claves cifradas, datos de personas) ---
+sistemas/sentinel/datos/
+
+# --- SENTINEL: inventario real de copias de seguridad del servidor (datos internos de la Clínica) ---
+# Si el repositorio es PRIVADO y quiere versionarlo, borre estas líneas.
+sistemas/sentinel/assets/inventario-backups.xlsx
+sistemas/sentinel/assets/inventario-backups.prev.xlsx
+sistemas/sentinel/INVENTARIO DE BACKUPS DE DATOS SERVIDOR PRINCIPAL.xlsx
+
+# --- Sistema / editor ---
+.DS_Store
+Thumbs.db
+~$*

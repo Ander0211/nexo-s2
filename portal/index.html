@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexo S² · Clínica Pabón</title>
+<link rel="icon" href="icono.png">
+<style>
+@font-face{font-family:Montserrat;font-weight:700;src:url(fonts/montserrat-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:Montserrat;font-weight:800;src:url(fonts/montserrat-latin-800-normal.woff2) format("woff2")}
+@font-face{font-family:Mulish;font-weight:400;src:url(fonts/mulish-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Mulish;font-weight:600;src:url(fonts/mulish-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:Mulish;font-weight:700;src:url(fonts/mulish-latin-700-normal.woff2) format("woff2")}
+
+:root{
+  --fondo:#eef3f9;
+  --papel:#ffffff;
+  --tinta:#0b2a6f;
+  --texto:#33415c;
+  --suave:#6b7a96;
+  --linea:#d6e0ee;
+  --azul:#1d6ee6;
+  --verde:#10a77c;
+  --rojo:#c23b3b;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --fondo:#08142e;
+    --papel:#0f1f42;
+    --tinta:#e6eeff;
+    --texto:#c3cfe6;
+    --suave:#8b9bbb;
+    --linea:#223766;
+    --azul:#4b8ff5;
+    --verde:#2fcf9d;
+    --rojo:#ff7b7b;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{
+  background:var(--fondo);
+  color:var(--texto);
+  font:400 16px/1.55 Mulish,"Segoe UI",system-ui,sans-serif;
+  display:grid;place-items:center;
+  padding:32px 20px;
+}
+.marco{
+  width:min(1040px,100%);
+  display:grid;grid-template-columns:minmax(260px,380px) 1fr;gap:56px;align-items:center;
+}
+.marca{text-align:center}
+.marca .placa{
+  background:#fff;border-radius:28px;padding:12px;display:inline-block;
+  box-shadow:0 1px 0 var(--linea);
+}
+.marca img{width:100%;max-width:300px;display:block}
+.marca p{margin-top:18px;color:var(--suave);font-size:.95rem}
+
+.eleccion h1{
+  font:800 clamp(1.6rem,3.2vw,2.15rem)/1.15 Montserrat,"Segoe UI",sans-serif;
+  color:var(--tinta);letter-spacing:-.01em;margin-bottom:18px;
+}
+
+
+/* el pulso del logo, como hilo que une las dos opciones */
+.pulso{display:block;width:100%;height:34px;margin:0 0 6px}
+.pulso path{fill:none;stroke:url(#grad);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:900;stroke-dashoffset:900;animation:trazo 1.6s ease-out .2s forwards}
+@keyframes trazo{to{stroke-dashoffset:0}}
+
+.sistema{
+  display:grid;grid-template-columns:1fr auto;gap:6px 20px;align-items:center;
+  background:var(--papel);border:1px solid var(--linea);
+  border-left:6px solid var(--color);
+  border-radius:6px 16px 16px 6px;
+  padding:20px 22px;margin-bottom:14px;
+}
+.sistema h2{font:700 1.25rem/1.2 Montserrat,"Segoe UI",sans-serif;color:var(--tinta)}
+.sistema .que{grid-column:1;color:var(--texto);font-size:.97rem}
+.sistema .estado{grid-column:1;display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--suave);font-weight:600}
+.punto{width:9px;height:9px;border-radius:50%;background:var(--suave);flex:none}
+.estado[data-e=activo] .punto{background:var(--verde)}
+.estado[data-e=iniciando] .punto{background:var(--azul);animation:late 1s ease-in-out infinite}
+.estado[data-e=error]{color:var(--rojo)}
+.estado[data-e=error] .punto{background:var(--rojo)}
+@keyframes late{50%{transform:scale(1.6);opacity:.5}}
+
+.sistema button{
+  grid-column:2;grid-row:1 / span 3;
+  font:700 1rem Montserrat,"Segoe UI",sans-serif;
+  color:#fff;background:var(--color);border:0;border-radius:999px;
+  padding:13px 26px;cursor:pointer;min-width:132px;
+}
+.sistema button:hover{filter:brightness(1.08)}
+.sistema button:focus-visible{outline:3px solid var(--tinta);outline-offset:3px}
+.sistema button:disabled{cursor:progress;opacity:.75}
+.compras{--color:var(--azul)}
+.copias{--color:var(--verde)}
+
+.pie{margin-top:18px;font-size:.85rem;color:var(--suave)}
+
+@media (max-width:760px){
+  .marco{grid-template-columns:1fr;gap:28px}
+  .marca img{max-width:190px}
+  .sistema{grid-template-columns:1fr}
+  .sistema button{grid-column:1;grid-row:auto;justify-self:start;margin-top:8px}
+}
+@media (prefers-reduced-motion:reduce){
+  .pulso path{animation:none;stroke-dashoffset:0}
+  .estado[data-e=iniciando] .punto{animation:none}
+}
+</style>
+</head>
+<body>
+<main class="marco">
+  <section class="marca">
+    <div class="placa"><img src="logo.png" alt="Nexo S²"></div>
+    <p>Clínica Cardioneurovascular Pabón</p>
+  </section>
+
+  <section class="eleccion" aria-labelledby="titulo">
+    <h1 id="titulo">¿Con qué sistema va a trabajar?</h1>
+
+    <svg class="pulso" viewBox="0 0 600 34" preserveAspectRatio="none" aria-hidden="true">
+      <defs><linearGradient id="grad" x1="0" x2="1"><stop offset="0" stop-color="#1d6ee6"/><stop offset="1" stop-color="#10a77c"/></linearGradient></defs>
+      <path d="M0 20 H250 L262 20 L272 4 L284 32 L296 12 L304 20 H600"/>
+    </svg>
+
+    <article class="sistema compras" data-id="sumipabon">
+      <h2>SUMIPABON</h2>
+      <p class="que">Compras y suministros: productos, proveedores, cotizaciones y órdenes de compra.</p>
+      <p class="estado" data-e="apagado"><span class="punto"></span><span class="txt">Comprobando…</span></p>
+      <button type="button">Entrar</button>
+    </article>
+
+    <article class="sistema copias" data-id="sentinel">
+      <h2>SENTINEL PABON</h2>
+      <p class="que">Copias de seguridad: inventario de backups del servidor y verificaciones.</p>
+      <p class="estado" data-e="apagado"><span class="punto"></span><span class="txt">Comprobando…</span></p>
+      <button type="button">Entrar</button>
+    </article>
+
+  </section>
+</main>
+
+<script>
+const TEXTOS = {
+  apagado: "Cerrado, se abre al entrar",
+  iniciando: "Abriendo… la primera vez puede tardar un par de minutos",
+  activo: "Abierto y listo",
+};
+let destino = null; // sistema al que el usuario pidió entrar
+
+function pintar(id, info){
+  const tarjeta = document.querySelector(`[data-id="${id}"]`);
+  const est = tarjeta.querySelector(".estado");
+  const btn = tarjeta.querySelector("button");
+  est.dataset.e = info.estado;
+  est.querySelector(".txt").textContent = info.estado === "error"
+    ? info.mensaje || "No se pudo abrir"
+    : (info.mensaje || TEXTOS[info.estado]);
+  btn.disabled = info.estado === "iniciando";
+  btn.textContent = info.estado === "iniciando" ? "Abriendo…" : info.estado === "error" ? "Reintentar" : "Entrar";
+}
+
+function ir(info){
+  location.href = `${location.protocol}//${location.hostname}:${info.puerto}/?nexo=${location.port || 80}`;
+}
+
+async function estado(){
+  try{
+    const r = await fetch("/api/estado", {cache:"no-store"});
+    const datos = await r.json();
+    for (const [id, info] of Object.entries(datos)) pintar(id, info);
+    if (destino && datos[destino]){
+      if (datos[destino].estado === "activo") { const i = datos[destino]; destino = null; ir(i); return; }
+      if (datos[destino].estado === "error") destino = null;
+    }
+  }catch{
+    document.querySelectorAll(".estado").forEach(e => {
+      e.dataset.e = "error";
+      e.querySelector(".txt").textContent = "Nexo S² no responde: revise que su ventana siga abierta";
+    });
+  }
+}
+
+document.querySelectorAll(".sistema button").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const id = btn.closest(".sistema").dataset.id;
+    destino = id;
+    btn.disabled = true; btn.textContent = "Abriendo…";
+    try{
+      const r = await fetch(`/api/iniciar/${id}`, {method:"POST"});
+      const info = await r.json();
+      if (info.estado === "activo") { destino = null; ir(info); return; }
+      pintar(id, info);
+    }catch{}
+  });
+});
+
+estado();
+setInterval(estado, 1500);
+</script>
+</body>
+</html>

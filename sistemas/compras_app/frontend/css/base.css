@@ -1,0 +1,254 @@
+/*
+ * BASE.CSS — DISEÑO DE LA APLICACIÓN (identidad de la Clínica Pabón)
+ * ====================================================================
+ * Lo que usan TODAS las pantallas: colores, tipografías, botones, la barra azul de arriba, el MENÚ LATERAL de la
+ * izquierda, la pantalla de bienvenida, las tarjetas de números (KPIs), el pie de página, los avisos flotantes y el
+ * panel de avisos.
+ *
+ * Cómo está armada la pantalla (como un panel de administración clásico):
+ *
+ *   ┌───────────────┬──────────────────────────────────────────────┐
+ *   │ SUMIPABON     │ ☰  Inicio › Tablero de compras     Datos del…│  ← .barra-sup (azul, fija arriba)
+ *   ├───────────────┼──────────────────────────────────────────────┤
+ *   │ MENÚ          │                                              │
+ *   │ ▸ Tablero     │        contenido: .vista-inicio (bienvenida) │
+ *   │ ▸ Agregar     │        o .vista del tablero                  │
+ *   │ ▸ Cargar      │                                              │
+ *   │ ...           ├──────────────────────────────────────────────┤
+ *   │ .menu-lateral │ Sede: …                        .pie          │
+ *   └───────────────┴──────────────────────────────────────────────┘
+ *
+ * Cómo cambiar la apariencia: casi todo sale de las «variables» del bloque :root de abajo. Cambiar un color ahí lo
+ * cambia en toda la aplicación. Hay UN solo tema (claro). Los valores salen de las hojas de estilo REALES de
+ * clinicardiopabon.com (Elementor kit 9, encabezado 14176, pie 1561 e inicio 14): ver la tabla del README.
+ *
+ * Otros archivos:  componentes.css → lista de productos y podio  ·  agregar.css → ventanas emergentes  ·  cargar.css → «Cargar datos»
+ */
+
+/* TIPOGRAFÍAS: las mismas tres de clinicardiopabon.com, guardadas en frontend/fonts (funcionan sin internet). */
+@font-face { font-family: "Montserrat"; font-weight: 600; font-display: swap; src: url("/static/fonts/montserrat-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 700; font-display: swap; src: url("/static/fonts/montserrat-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-weight: 800; font-display: swap; src: url("/static/fonts/montserrat-latin-800-normal.woff2") format("woff2"); }
+@font-face { font-family: "Mulish"; font-weight: 400; font-display: swap; src: url("/static/fonts/mulish-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Mulish"; font-weight: 600; font-display: swap; src: url("/static/fonts/mulish-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Mulish"; font-weight: 700; font-display: swap; src: url("/static/fonts/mulish-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Mulish"; font-weight: 800; font-display: swap; src: url("/static/fonts/mulish-latin-800-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-weight: 500; font-display: swap; src: url("/static/fonts/poppins-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-weight: 600; font-display: swap; src: url("/static/fonts/poppins-latin-600-normal.woff2") format("woff2"); }
+
+/* VARIABLES DE DISEÑO (valores tomados del sitio clinicardiopabon.com).
+   --accent #015AAA azul de marca (color «primary»: barra de arriba, títulos, pie) · --accent-2 #007EFF azul vivo de los botones
+   --azul-vivo #1E3BEA lo usa el sitio al pasar el mouse por sus botones de plantilla · --hover #D0E6FA azul claro de los menús
+   --navy #013E74 azul oscuro de los contadores del sitio (aquí: menú lateral y cifras) · --hover-menu #014785 color del menú al pasar el mouse
+   --rojo #EA0B0B rojo de la frase de la bienvenida · --rojo-menu #E62429 rojo del subrayado del menú · --bad rojo de alertas de los botones
+   --bg #F5F5F5 fondo (las «cajas de contenido» del sitio) · --panel blanco · --line bordes (el «divider» del sitio, negro al 12 %)
+   --text texto de datos · --muted #666666 texto del sitio · --faint #767676 texto tenue («light-gray» del sitio)
+   --good verde (mejor precio) · --warn ámbar · --gold/--silver/--bronze medallas del podio (no existen en el sitio)
+   --menu-* colores del menú lateral · --menu-w ancho del menú · --barra-h alto de la barra de arriba
+   --radius esquinas (3 px, como los botones del sitio)
+   --font Mulish (texto) · --font-encabezado Mulish (h1–h6, como el tema) · --font-display Poppins (títulos grandes) · --font-titulo Montserrat (cifras y marca) */
+:root {
+  --bg: #f5f5f5; --panel: #ffffff; --panel-2: #f5f5f5; --panel-3: #e6eef6;
+  --line: rgba(0,0,0,.12); --line-2: rgba(0,0,0,.24);
+  --text: #111111; --muted: #666666; --faint: #767676;
+  --accent: #015aaa; --accent-2: #007eff; --accent-dark: #013e74; --navy: #013e74; --azul-vivo: #1e3bea; --hover: #d0e6fa; --hover-menu: #014785;
+  --good: #17805a; --warn: #b45f06; --bad: #cc2e2e; --rojo: #ea0b0b; --rojo-menu: #e62429;
+  --gold: #d29b00; --silver: #8794ad; --bronze: #b3672b;
+  --menu-bg: #013e74; --menu-bg-2: #012f5c; --menu-txt: #d6e4f2; --menu-w: 240px; --barra-h: 52px;
+  --radius: 3px; --radius-s: 3px;
+  --shadow: 0 6px 22px rgba(1,60,120,.20); --shadow-suave: 0 1px 4px rgba(1,60,120,.10);
+  --font: "Mulish", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-encabezado: "Mulish", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --font-display: "Poppins", "Montserrat", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --font-titulo: "Montserrat", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --font-boton: "Mulish", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  color-scheme: light;
+}
+
+/* REGLAS BÁSICAS: que el ancho incluya el borde, que [hidden] siempre oculte, y tipos de letra heredados. */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; min-height: 100vh; font: 14px/1.45 var(--font); color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+svg { display: block; flex: none; }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-encabezado); font-weight: 600; }
+/* .num: cifras del mismo ancho (tabulares) para que las columnas de precios queden alineadas. */
+.num { font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+/* Contorno azul al navegar con teclado (accesibilidad). */
+:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; border-radius: 3px; }
+::selection { background: var(--accent-2); color: #fff; }
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+
+/* ---------- Botones ---------- */
+/* .btn (normal) · .btn-primario (azul) · .btn-fantasma (discreto) · .btn-icono (cuadrado) · .btn-grande (el de la bienvenida).
+   Medidas del botón «M» del sitio: 34 px de alto, letra Mulish 600 de 14 px y esquinas de 3 px. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 34px; padding: 0 14px;
+  border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel);
+  font-family: var(--font-boton); font-weight: 600; font-size: 14px; white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.btn:hover { background: var(--hover); border-color: var(--accent); }
+.btn[disabled] { opacity: .55; pointer-events: none; }
+/* Como los botones «CONOCE TODOS LOS SERVICIOS» del sitio: azul vivo #007EFF que pasa a #015AAA al pasar el mouse. */
+.btn-primario { color: #fff; border-color: var(--accent-2); background: var(--accent-2); }
+.btn-primario:hover { background: var(--accent); border-color: var(--accent); }
+.btn-fantasma { background: transparent; border-color: var(--line-2); color: var(--muted); }
+.btn-fantasma:hover { color: var(--accent); }
+.btn-icono { position: relative; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); }
+.btn-icono:hover { border-color: var(--accent); background: var(--hover); }
+/* Botón grande de la bienvenida: como el «CONOCE TODOS LOS SERVICIOS» del inicio del sitio (esquinas de 9 px, mayúsculas). */
+.btn-grande { height: 54px; padding: 0 30px; font-size: 17px; border-radius: 9px; text-transform: uppercase; letter-spacing: .02em; }
+/* .spin: hace girar el icono ↻ mientras se actualizan los Excel. */
+.spin { animation: giro .8s linear infinite; }
+@keyframes giro { to { transform: rotate(360deg); } }
+
+/* ---------- Barra superior (azul, fija) ---------- */
+/* .barra-sup: a la izquierda la marca (con el ancho del menú), luego el botón ☰, la ruta «Inicio › …» y, a la derecha, la fecha de los datos. */
+.barra-sup { position: fixed; inset: 0 0 auto 0; z-index: 40; height: var(--barra-h); display: flex; align-items: stretch; background: var(--accent); color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+/* .marca: logo blanco de la clínica + nombre de la aplicación, sobre el azul oscuro del menú (una sola pieza con él). */
+.marca { display: flex; align-items: center; justify-content: center; gap: 12px; flex: none; width: var(--menu-w); background: var(--navy); color: #fff; }
+.marca strong { font-family: var(--font-display); font-weight: 600; font-size: 19px; line-height: 1.15; }
+.marca-logo { display: block; height: 36px; width: auto; }
+.alternar { display: grid; place-items: center; flex: none; width: 52px; border: 0; background: transparent; color: #fff; }
+.alternar:hover { background: rgba(255,255,255,.14); }
+.ruta { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; }
+.ruta a:hover { text-decoration: underline; }
+.ruta-actual:not(:empty)::before { content: "›"; margin-right: 8px; opacity: .75; }
+.fecha-datos { margin-left: auto; align-self: center; padding-right: 22px; font-size: 12.5px; opacity: .92; }
+
+/* ---------- Menú lateral (izquierda, oscuro) ---------- */
+/* .menu-lateral: columna fija a la izquierda. Con body.menu-cerrado (botón ☰) se desliza fuera de la pantalla. */
+.menu-lateral { position: fixed; top: var(--barra-h); bottom: 0; left: 0; z-index: 30; width: var(--menu-w); display: flex; flex-direction: column; background: var(--menu-bg); overflow-y: auto; transition: transform .2s; }
+.menu-titulo { padding: 12px 16px; background: var(--menu-bg-2); color: #9db9d6; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.menu-lista { display: flex; flex-direction: column; }
+/* .menu-item: cada opción (vale para <a> y <button>). aria-current="page" = la pantalla en la que estás (franja azul a la izquierda). */
+.menu-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px 14px 12px; border: 0; border-left: 4px solid transparent;
+  border-bottom: 1px solid rgba(255,255,255,.06); background: transparent; color: var(--menu-txt);
+  font-family: var(--font-boton); font-size: 14px; font-weight: 600; text-align: left; transition: background .15s, color .15s;
+}
+/* Pasar el mouse = #014785 (el color de menú del sitio); la opción activa lleva el rojo #E62429 que el sitio usa de subrayado. */
+.menu-item:hover { background: var(--hover-menu); color: #fff; }
+.menu-item[aria-current="page"] { background: var(--hover-menu); color: #fff; border-left-color: var(--rojo-menu); }
+.menu-item[disabled] { opacity: .6; pointer-events: none; }
+/* .badge: círculo rojo con el número de avisos, al final de la opción «Avisos de datos». */
+.badge { margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; border-radius: 11px; font-size: 11.5px; font-weight: 700; background: var(--rojo); color: #fff; }
+body.menu-cerrado .menu-lateral { transform: translateX(-100%); }
+
+/* ---------- Contenido y pie de página ---------- */
+/* .contenido: todo lo que queda a la derecha del menú y debajo de la barra. */
+.contenido { margin-left: var(--menu-w); padding-top: var(--barra-h); min-height: 100vh; display: flex; flex-direction: column; transition: margin-left .2s; }
+body.menu-cerrado .contenido { margin-left: 0; }
+.contenido > main { flex: 1; display: flex; flex-direction: column; }
+/* .vista: cada «pantalla» (bienvenida o tablero); se muestra una sola a la vez. */
+.vista { flex: 1; width: 100%; max-width: 1680px; margin: 0 auto; padding: 22px 26px 30px; }
+/* .pie: igual que el del sitio — azul de marca, letras blancas y el logo blanco. */
+.pie { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 14px 26px; background: var(--accent); color: #fff; font-size: 14px; }
+.pie b { color: #fff; }
+.pie-marca { display: flex; align-items: center; gap: 14px; }
+.pie-logo { display: block; height: 34px; width: auto; }
+
+/* ---------- Pantalla de bienvenida ---------- */
+/* .vista-inicio: ocupa toda la pantalla y centra la tarjeta de bienvenida. */
+.vista-inicio { display: grid; place-items: center; min-height: calc(100vh - var(--barra-h) - 66px); }
+.bienvenida { display: grid; justify-items: center; gap: 6px; width: min(780px, 100%); padding: 48px 40px 40px; text-align: center; background: var(--panel); border: 1px solid var(--line); border-top: 5px solid var(--accent); border-radius: var(--radius); box-shadow: var(--shadow-suave); }
+/* Título como los del sitio: Poppins 600 en azul de marca, con la rayita corta de 3 px debajo (el «divider» del sitio). */
+.bienvenida h1 { margin: 4px 0 0; color: var(--accent); font-family: var(--font-display); font-weight: 600; font-size: clamp(46px, 8vw, 80px); line-height: 1.05; }
+.bienvenida h1::after { content: ""; display: block; width: 56px; height: 3px; margin: 14px auto 0; background: var(--accent); }
+/* Frase en rojo, mayúsculas y Montserrat 600, como «CON ESTÁNDARES DE CALIDAD…» del sitio. */
+.bienvenida-lema { margin: 8px 0 0; color: var(--rojo); font-family: var(--font-titulo); font-weight: 600; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; }
+.bienvenida-texto { max-width: 560px; margin: 14px 0 22px; color: var(--muted); font-size: 16px; line-height: 1.6; }
+/* .bienvenida-datos: tres datos rápidos bajo el botón. Cifras como los contadores del sitio: Montserrat 600 en #013E74. */
+.bienvenida-datos { display: flex; flex-wrap: wrap; justify-content: center; margin: 30px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); list-style: none; width: 100%; }
+.bienvenida-datos li { flex: 1 1 150px; padding: 4px 16px; color: var(--muted); font-size: 13px; }
+.bienvenida-datos li + li { border-left: 1px solid var(--line); }
+.bienvenida-datos strong { display: block; color: var(--navy); font-family: var(--font-titulo); font-size: 24px; font-weight: 600; }
+
+/* ---------- Encabezado del tablero ---------- */
+.cab-vista { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-bottom: 18px; }
+.cab-vista h1 { margin: 0; color: var(--accent); font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1.15; }
+.cab-vista h1::after { content: ""; display: block; width: 48px; height: 3px; margin-top: 8px; background: var(--accent); }
+.cab-vista p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+/* .buscador: caja de búsqueda; al enfocarla se marca el borde (focus-within). */
+.buscador { display: flex; align-items: center; gap: 10px; flex: 1; max-width: 520px; height: 40px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); transition: border-color .15s, box-shadow .15s; }
+.buscador:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(1,90,170,.2); }
+.buscador svg { color: var(--muted); }
+/* Los campos del sitio escriben en azul de marca y su ayuda (placeholder) se ve al 40 %. */
+.buscador input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--accent); }
+.buscador input::placeholder { color: var(--accent); opacity: .4; }
+/* kbd: la teclita «/» que indica el atajo para ir al buscador. */
+kbd { padding: 1px 7px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 3px; font: 600 11px var(--font); color: var(--muted); }
+
+/* ---------- KPIs (los 4 números grandes) ---------- */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+/* .kpi: cada tarjeta. --kc es su color propio (lo pone app.js): franja de arriba y cuadrito del icono. */
+.kpi { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border: 1px solid var(--line); border-top: 3px solid var(--kc, var(--accent)); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow-suave); text-align: left; transition: box-shadow .15s; }
+button.kpi:hover { box-shadow: var(--shadow); }
+.kpi-icono { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: var(--radius); color: #fff; background: var(--kc, var(--accent)); }
+.kpi-titulo { display: block; color: var(--muted); font-family: var(--font-encabezado); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.kpi-valor { display: block; margin: 3px 0 2px; color: var(--navy); font-family: var(--font-titulo); font-size: 26px; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
+.kpi-sub { color: var(--muted); font-size: 12.5px; }
+
+/* ---------- Estructura del tablero ---------- */
+/* .rejilla: dos columnas — la lista (flexible) y el panel «Dónde comprar» (330 px). */
+.rejilla { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
+/* .panel: caja blanca con franja azul arriba (como las cajas de un panel de administración). */
+.panel { border: 1px solid var(--line); border-top: 3px solid var(--accent-2); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow-suave); }
+
+/* ---------- Avisos flotantes ---------- */
+/* TOASTS: avisos abajo a la derecha. Los crea util.js → toast(). */
+#toasts { position: fixed; right: 22px; bottom: 22px; z-index: 90; display: grid; gap: 10px; }
+.toast { display: flex; gap: 10px; align-items: flex-start; max-width: 420px; padding: 12px 16px; border: 1px solid var(--line-2); border-left: 4px solid var(--accent-2); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); animation: entra .28s ease-out; }
+.toast.ok { border-left-color: var(--good); } .toast.error { border-left-color: var(--bad); } .toast.aviso { border-left-color: var(--warn); }
+.toast.sale { opacity: 0; transform: translateX(20px); transition: .3s; }
+@keyframes entra { from { opacity: 0; transform: translateY(14px); } }
+
+/* ---------- Panel lateral de avisos ---------- */
+/* PANEL DE AVISOS: .telon = fondo oscuro · .cajon = panel que se desliza desde la derecha · .aviso = cada mensaje. */
+.telon { position: fixed; inset: 0; z-index: 60; background: rgba(3,25,48,.55); animation: aparece .2s; }
+@keyframes aparece { from { opacity: 0; } }
+.cajon { position: fixed; top: 0; right: 0; bottom: 0; z-index: 61; width: min(460px, 100vw); display: flex; flex-direction: column; background: var(--panel); box-shadow: var(--shadow); animation: desliza .28s ease-out; }
+@keyframes desliza { from { transform: translateX(100%); } }
+.cajon header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: var(--accent); color: #fff; }
+.cajon header .btn-icono { background: transparent; border-color: rgba(255,255,255,.45); color: #fff; }
+.cajon header .btn-icono:hover { background: rgba(255,255,255,.16); }
+.cajon h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.cajon .cuerpo { flex: 1; padding: 14px 16px 24px; overflow: auto; display: grid; gap: 10px; align-content: start; background: var(--bg); }
+.aviso { padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--accent-2); border-radius: var(--radius); background: var(--panel); }
+.aviso.warn { border-left-color: var(--warn); }
+.aviso .t { display: flex; gap: 9px; align-items: flex-start; font-weight: 700; }
+.aviso .punto { width: 9px; height: 9px; margin-top: 6px; border-radius: 50%; background: var(--accent-2); flex: none; }
+.aviso.warn .punto { background: var(--warn); }
+.aviso .d { margin: 6px 0 0 18px; color: var(--muted); font-size: 12.5px; word-break: break-word; }
+
+/* ---------- Pantallas medianas y pequeñas ---------- */
+/* El panel «Dónde comprar» baja debajo de la lista cuando ya no cabe al lado. */
+@media (max-width: 1380px) { .rejilla { grid-template-columns: 1fr; } }
+@media (max-width: 1180px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+/* MENOS DE 1000 px: el menú no empuja el contenido, se abre encima (botón ☰). */
+@media (max-width: 1000px) {
+  .contenido, body.menu-cerrado .contenido { margin-left: 0; }
+  .menu-lateral { box-shadow: var(--shadow); }
+  .marca { width: auto; padding: 0 16px; }
+  .vista { padding: 16px 14px 24px; }
+  .fecha-datos { display: none; }
+}
+@media (max-width: 560px) { .kpis { grid-template-columns: 1fr; } .bienvenida { padding: 30px 18px 24px; } .bienvenida-datos li + li { border-left: 0; } }
+/* Si la persona pidió «reducir movimiento» en su sistema, se desactivan casi todas las animaciones. */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001s !important; transition-duration: .001s !important; } }
+
+/* CANTIDAD DISPONIBLE: avisos en la fila del tablero y en la ventana de ofertas */
+.aviso-cant { display: flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 11.5px; font-weight: 700; color: var(--accent); }
+.aviso-cant.mal { color: var(--bad); }
+.disponible { margin: 4px 0 2px; font-size: 12px; font-weight: 700; color: var(--good); }
+.disponible.no-alcanza { color: var(--warn); }
+.reparto-panel { margin: 0 0 14px; padding: 12px 14px; border: 1px solid var(--accent); border-left-width: 4px; border-radius: var(--radius); background: var(--panel-3); }
+.reparto-panel.falta { border-color: var(--warn); background: #fff8ec; }
+.reparto-panel h4 { margin: 0 0 4px; font-size: 14px; }
+.reparto-panel p { margin: 4px 0; font-size: 12.5px; color: var(--muted); }
+.reparto-panel p.mal { color: var(--bad); font-weight: 700; }
+.reparto-panel ul { margin: 6px 0; padding-left: 18px; font-size: 13px; }

@@ -1,0 +1,12 @@
+TIPOGRAFÍAS DE LA APLICACIÓN
+============================
+Son las mismas tres que carga la página web de la Clínica Pabón (clinicardiopabon.com):
+
+  Montserrat  →  títulos, cifras grandes (KPIs) y nombre de la marca
+  Mulish      →  texto general de la pantalla
+  Poppins     →  botones, filtros y pestañas
+
+Se incluyen dentro de la aplicación (carpeta frontend/fonts) para que se vean igual SIN internet.
+Solo se guardó el subconjunto «latin» (incluye tildes, ñ, ¿ ¡ y « »).
+Licencia: SIL Open Font License 1.1 (uso libre, también comercial). Fuente: paquetes npm @fontsource/*.
+Para cambiar una tipografía: edita las variables --font, --font-titulo y --font-boton en css/base.css.

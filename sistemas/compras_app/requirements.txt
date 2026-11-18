@@ -1,0 +1,7 @@
+# LIBRERÍAS NECESARIAS PARA EJECUTAR LA APLICACIÓN
+# (se instalan con:  pip install -r requirements.txt)
+fastapi>=0.110    # el framework web: define las rutas de la API
+uvicorn>=0.27     # el servidor que ejecuta FastAPI
+pandas>=2.0       # lee los Excel de data/excel/
+openpyxl>=3.1     # motor de pandas para .xlsx, y para crear VALORES.xlsx, la OC y la ficha de cotización
+pillow>=10.0      # imágenes: sin ella la ficha FR-GDS-07 saldría SIN sus dos logos (openpyxl solo conserva las imágenes si está instalada)

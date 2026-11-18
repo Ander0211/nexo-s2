@@ -1,0 +1,26 @@
+LOS EXCEL YA NO VIENEN CON EL PROYECTO
+=====================================
+Los 5 Excel de origen tienen productos, existencias y precios de proveedores: son datos de la empresa y NO se incluyen.
+Se suben a mano desde la aplicación:
+
+  1. Entra como administrador (o Prime) y pulsa «Actualizar Excel» en el menú.
+     (Con la base vacía, el sistema mismo te lo pide: la bienvenida y el tablero dicen «Todavía no hay datos», muestran la lista «Lo que necesita el sistema»
+      con cada Excel, para qué sirve, si es obligatorio u opcional y si ya está cargado, y traen el botón «Subir los Excel».)
+     OBLIGATORIOS: 05-STOCK, 06-EXISTENCIAS, EMPRESA y PORTAFOLIO.   OPCIONAL: FICHA_COTIZACION.
+  2. En «Sube tus Excel desde el computador» elige los 5 archivos juntos:
+
+       05-STOCK.xlsx            StockMax / StockMed / StockMin por producto
+       06-EXISTENCIAS.xlsx      cantidad actual por producto
+       EMPRESA.xlsx             proveedores
+       FICHA_COTIZACION.xlsx    catálogo de productos a cotizar
+       PORTAFOLIO.xlsx          ofertas: proveedor + producto + valor
+
+     El sistema reconoce a qué tabla va cada uno por su nombre (aunque no se llamen igual, por ejemplo «Stock septiembre.xlsx»);
+     si no lo reconoce, eliges la tabla. Se pueden subir todos juntos o de a uno.
+  3. Pulsa «Subir e importar los archivos». Cada importación queda en el Historial y se puede deshacer.
+
+Después de la primera carga, los Excel NO se vuelven a leer por su cuenta (así no se pierde lo que edites en «Administración»).
+Para traer datos nuevos, repite el paso 2 con «Agregar y actualizar» o «Reemplazar».
+
+OPCIONAL: si prefieres copiar los archivos a ESTA carpeta (con esos nombres exactos), la aplicación los carga sola la primera vez
+y «Actualizar Excel» ofrece también importarlos desde aquí. Los .xlsx de esta carpeta no se suben a GitHub (ver .gitignore).

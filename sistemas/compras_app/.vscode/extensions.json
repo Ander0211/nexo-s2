@@ -1,0 +1,12 @@
+{
+  // Extensiones que VS Code propondrá instalar al abrir el proyecto.
+  "recommendations": [
+    "ms-python.python", // soporte de Python
+    "ms-python.vscode-pylance", // autocompletado y detección de errores mientras escribes
+    "ms-python.debugpy", // depurador
+    "charliermarsh.ruff", // formato y revisión de estilo (el que se aplica al guardar)
+    "editorconfig.editorconfig", // respeta .editorconfig (sangrías, saltos de línea)
+    "github.vscode-pull-request-github", // Pull Requests de GitHub dentro de VS Code
+    "eamodio.gitlens" // ver quién cambió cada línea y cuándo
+  ]
+}

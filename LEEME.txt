@@ -1,0 +1,97 @@
+NEXO S² — un solo inicio para SUMIPABON y SENTINEL PABON
+=========================================================
+
+CÓMO SE USA
+  1. Doble clic en  INICIAR-NEXO.bat   (deje esa ventana abierta).
+  2. Se abre el navegador con el portal de Nexo S² (http://localhost:7000).
+  3. Pulse "Entrar" en el sistema que quiera. Nexo S² lo enciende y lo lleva a él.
+     Funciona igual que si lo hubiera abierto solo (SUMIPABON pide su usuario y clave como siempre).
+  SUMIPABON → Usuarios: cada usuario tiene el botón "Desactivar" (no puede entrar, conserva sus datos) y
+  "Activar" para devolverle el acceso, igual que en SENTINEL.
+  SUMIPABON → Adicionales (menú): suba un Excel con CÓDIGO y DESCRIPCIÓN (botón "Plantilla" para el formato),
+  pegue filas copiadas de Excel o escríbalas a mano, y vea el Proveedor 1, 2 y 3 con su menor valor ofertado.
+  "Descargar" baja la lista con esos proveedores en Excel. Es solo de consulta: no cambia el tablero ni la OC.
+  4. Para volver al portal: botón "Volver a Nexo S²" (en SUMIPABON debajo de "Ingresar" y en la barra azul;
+     en SENTINEL arriba, en verde, y debajo de "Ingresar").
+  5. Para apagar todo: Ctrl+C en la ventana de Nexo S² (o ciérrela).
+
+QUÉ HAY EN ESTA CARPETA
+  nexo.py              el portal y el que enciende los sistemas (solo usa Python, sin librerías extra)
+  INICIAR-NEXO.bat     inicio en Windows      |  iniciar-nexo.sh  inicio en Linux/macOS
+  portal/              la página de inicio con el logo de Nexo S²
+  sistemas/compras_app SUMIPABON (puerto 8000): solo se le agregó el botón "Volver a Nexo S²"
+  sistemas/sentinel    SENTINEL PABON (puerto 8080): nueva versión, con usuarios y el botón "Volver a Nexo S²"
+  nexo_config.json     dónde está cada sistema y su puerto
+  logs/                se crea solo: lo que escribe cada sistema al arrancar (para ver errores)
+
+SENTINEL: USUARIOS (NUEVO)
+  SENTINEL ahora pide usuario y clave. Hay dos roles:
+    Administrador  hace todo: carga el inventario, configura la fuente, verifica/aprueba (ENVIAR) y crea usuarios.
+    Revisor        solo consulta los datos; NO carga ni verifica/aprueba copias.
+  La primera vez, abra SENTINEL desde ESTE PC (no desde otro equipo): le pedirá crear el administrador.
+  Luego, en el botón "Usuarios" (arriba), cree las cuentas: nombre, usuario, rol, correo y celular.
+  Igual que en SUMIPABON, SENTINEL le da una clave temporal y se la envía por CORREO y por WHATSAPP;
+  al entrar, la persona debe elegir su propia clave. Si el correo ya funciona en SUMIPABON, SENTINEL usa
+  esa misma configuración; si no, vea sistemas/sentinel/.env.ejemplo.
+  SUPERUSUARIO (igual que en SUMIPABON): en sistemas/sentinel/.env escriba
+      SENTINEL_SUPERUSUARIO=superadmin
+      SENTINEL_SUPERUSUARIO_CLAVE=SuClaveSegura2026
+  y reinicie. Es un administrador fijo: no se puede borrar, desactivar ni cambiar desde la pantalla, y si
+  alguien lo altera, al reiniciar vuelve a quedar como en el .env. Si no lo define, SENTINEL usa el
+  superusuario de SUMIPABON (COMPRAS_SUPERUSUARIO y COMPRAS_SUPERUSUARIO_CLAVE): el mismo entra a los dos.
+  Si olvida la clave del único administrador: apague todo, borre sistemas/sentinel/datos/usuarios.json y créelo otra vez.
+
+CORREOS Y WHATSAPP CON LA MARCA NEXO S²
+  Todo lo que envían SUMIPABON y SENTINEL llega como "Nexo S²": remitente "Nexo S²" (con la misma dirección
+  de correo configurada), asunto "Nexo S² · ...", logo de Nexo S², una franja que dice qué sistema lo envía
+  (SUMIPABON · Compras y suministros, o SENTINEL PABON · Copias de seguridad) y un pie común.
+
+SENTINEL EN EL CELULAR
+  SENTINEL se adapta a cualquier celular o tableta: menú con el botón ☰, opciones con ⋮ y tablas que se
+  deslizan de lado. El enlace del correo/WhatsApp lleva a la IP de este PC en la red: el celular debe estar
+  en la misma red (Wi-Fi de la Clínica) y el Firewall de Windows debe permitir Python (la primera vez Windows
+  pregunta: marque "Redes privadas" y Permitir).
+
+PLANTILLAS DE WHATSAPP: UNA DIFERENTE PARA CADA SISTEMA
+  SUMIPABON y SENTINEL pueden compartir el correo y la cuenta de WhatsApp, pero cada uno DEBE tener su
+  propia plantilla aprobada en Meta. Nexo S² lo vigila en los dos sentidos: si un sistema tiene la misma
+  plantilla del otro, NO envía el WhatsApp automático (la persona recibiría el mensaje del otro sistema,
+  con una clave que allá no sirve) y en la pantalla aparece el aviso y el botón "Abrir WhatsApp con el mensaje".
+
+  Cree en Meta (WhatsApp Manager > Plantillas, categoría "Utilidad", idioma Español) estas plantillas,
+  todas con 4 variables en este orden: {{1}} nombre, {{2}} usuario, {{3}} clave temporal, {{4}} dirección.
+
+    acceso_sumipabon   (en compras_app/.env:  COMPRAS_WHATSAPP_PLANTILLA=acceso_sumipabon)
+      Hola {{1}}, ya tienes acceso a SUMIPABON (compras y suministros) de la Clínica Cardioneurovascular Pabón.
+      Usuario: {{2}}  Clave temporal: {{3}}  Entra aquí: {{4}}
+      Al entrar te pedirá elegir tu propia clave. Mensaje enviado por Nexo S².
+
+    acceso_sentinel    (en sentinel/.env:  SENTINEL_WHATSAPP_PLANTILLA=acceso_sentinel)
+      Hola {{1}}, ya tiene acceso a SENTINEL PABON (copias de seguridad) de la Clínica Cardioneurovascular Pabón.
+      Usuario: {{2}}  Clave temporal: {{3}}  Entre aquí: {{4}}
+      Puede cambiar su clave después en «Mi clave». Mensaje enviado por Nexo S².
+
+    Opcionales, para "Nueva clave" (mismo formato, empezando "Hola {{1}}, se restableció su clave de ..."):
+      clave_sumipabon  → COMPRAS_WHATSAPP_PLANTILLA_RESTABLECER     clave_sentinel → SENTINEL_WHATSAPP_PLANTILLA_RESTABLECER
+
+  Mientras Meta no apruebe la plantilla de un sistema, ese sistema ofrece "Abrir WhatsApp con el mensaje"
+  (ya escrito con el texto correcto). El correo funciona siempre que el SMTP esté configurado.
+  En los dos sistemas el enlace del mensaje usa la IP de este PC (nunca "localhost") y la clave temporal
+  funciona aunque se pegue con un espacio al final.
+
+IMPORTANTE: SUS DATOS
+  Los sistemas que van aquí son los del .zip. Si en su PC ya usa SUMIPABON o SENTINEL con datos
+  (base de datos en compras_app/data, archivo .env, el Excel de inventario, config.json), tiene dos opciones:
+    a) Copie SUS carpetas reales encima de  sistemas/compras_app  y  sistemas/sentinel.
+    b) O déjelas donde están y escriba su ruta en nexo_config.json, por ejemplo:
+         "carpeta": "C:\\proyectos\\compras_app"
+  (en JSON las barras de Windows van dobles: \\)
+
+DESDE OTROS EQUIPOS DE LA RED
+  http://<IP de este equipo>:7000   (la IP se ve con "ipconfig"). Al elegir un sistema
+  los lleva a la misma IP con el puerto de ese sistema. Si el firewall pregunta, permita Python.
+
+SI ALGO FALLA
+  "Python no se reconoce"     → instale Python 3.12 marcando "Add python.exe to PATH".
+  Un sistema dice "No se pudo abrir" → abra logs/<sistema>.log y mire el final.
+  La primera vez SUMIPABON tarda 1–2 minutos (instala sus librerías; necesita internet).

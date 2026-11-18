@@ -1,0 +1,278 @@
+/*
+ * ESTILOS DE LAS FUNCIONES NUEVAS
+ * ===============================
+ *   1. Botón «Actualizar todo» del tablero
+ *   2. Cantidad a comprar EDITABLE (columna «Comprar» de cada fila), con su ajuste para escritorio y celular
+ *   3. El nombre del proveedor como botón (abre su ficha)
+ *   4. La ficha de la empresa (ventana)
+ *   5. Columna de solo lectura en Administración (nombre de la empresa en el Portafolio)
+ *   6. La ventana de espera «El viaje a la clínica» (la escena misma vive en frontend/viaje/escena.txt)
+ *   7. Barra superior en celular
+ *   8. Etiqueta «Nuevo» · 9. «Stock suficiente» y aviso de compra menor · 10. Ventana «¿Está seguro de la cantidad?»
+ *  11. Ventanas emergentes: movibles y adaptadas al celular
+ *  12. Inicio: logos de la Clínica en las esquinas y certificaciones en el pie
+ *  13. Descargas que tardan en prepararse («Preparando…»)
+ *  14. El proveedor sube su ficha y el administrador la revisa («Ofertas de proveedores»)
+ *  15. Listas con buscador y descarga («Sin oferta», «Nuevos», alternativas) y proveedor nuevo en el formulario de usuarios
+ * Se carga DESPUÉS de los demás archivos de css/, así que puede afinar lo que ellos definen.
+ */
+
+/* ------------------------------------------------------------------ 1. «Actualizar todo» */
+.tablero-acciones { display: flex; align-items: center; gap: 10px; align-self: center; }
+.tablero-acciones .btn { white-space: nowrap; }
+.hora-actualizado { color: var(--muted); font-size: 12px; }
+.hora-actualizado:empty { display: none; }
+.girando svg { animation: gira .8s linear infinite; }
+@keyframes gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .girando svg { animation: none; } }
+
+/* ------------------------------------------------------------------ 2. Cantidad a comprar editable
+   - La caja mide «8 dígitos + relleno» en letra de máquina (1ch = el ancho de un dígito): caben los 8 dígitos del tope
+     (10.000.000) y NUNCA se corta el número. Es una caja de texto, así que no lleva flechitas encima de las cifras.
+   - Escritorio: la caja y el botón ✓ van a la derecha, con «calculada» (o «editada · calculada N») debajo.
+   - Lista estrecha (celular): la cantidad pasa a SU PROPIA fila, con título a la izquierda y la caja grande a la derecha. */
+.cantidad-editable { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
+.cantidad-titulo { display: none; color: var(--muted); font-size: 13px; font-weight: 600; }
+.cantidad-campo { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.cantidad-input { box-sizing: border-box; width: calc(8ch + 26px); height: 34px; padding: 0 9px; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); color: var(--text); font: 700 15px/1 ui-monospace, "Cascadia Mono", Consolas, monospace; text-align: right; font-variant-numeric: tabular-nums; }
+.cantidad-input:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(1, 90, 170, .18); }
+.cantidad-guardar { flex: none; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); color: var(--text); cursor: pointer; transition: background .15s, border-color .15s; }
+.cantidad-guardar:hover:not(:disabled) { border-color: var(--accent); background: var(--hover); }
+.cantidad-guardar:disabled { opacity: .35; cursor: default; }
+.cantidad-editable.sin-guardar .cantidad-input { border-color: var(--warn); box-shadow: 0 0 0 3px rgba(180, 95, 6, .16); }
+.cantidad-editable.sin-guardar .cantidad-guardar { color: #fff; border-color: var(--good); background: var(--good); }
+.cantidad-restaurar { display: inline-flex; align-items: center; gap: 4px; padding: 2px 0; border: 0; background: transparent; color: var(--accent); font: 700 11px/1.2 var(--font); cursor: pointer; text-align: right; }
+.cantidad-restaurar:hover { text-decoration: underline; }
+@container lista (max-width: 560px) {
+  .fila-principal { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "p p" "c c" "s o" "t t" "a a"; }
+  .c-total { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; text-align: left; }
+  .cantidad-editable { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "t c" "e c"; align-items: center; gap: 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--panel-2); text-align: left; }
+  .cantidad-titulo { display: block; grid-area: t; }
+  .cantidad-pie { grid-area: e; align-items: flex-start; }
+  .cantidad-pie small, .cantidad-restaurar, .cantidad-aviso { text-align: left; }
+  .cantidad-campo { grid-area: c; }
+  .cantidad-input { width: calc(8ch + 30px); height: 44px; font-size: 18px; }
+  .cantidad-guardar { width: 44px; height: 44px; }
+}
+
+/* Fila que se acaba de editar y ya no cumple el filtro activo (por ejemplo, un producto al que se le puso 0 en «Por comprar»): se queda a la
+   vista, atenuada y con un aviso, hasta que se actualice la lista. */
+.fila.fuera-filtro { background: #fffaf0; }
+.fila.fuera-filtro .fila-principal { opacity: .72; }
+.fuera-aviso { padding: 0 20px 12px; color: var(--warn); font-size: 12.5px; font-weight: 600; }
+
+/* ------------------------------------------------------------------ 3. El nombre del proveedor como botón */
+.enlace-empresa { max-width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.enlace-empresa:hover, .enlace-empresa:focus-visible { color: var(--accent); text-decoration: underline; }
+
+/* ------------------------------------------------------------------ 4. Ficha de la empresa */
+.ficha-contacto, .ficha-cifras { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.ficha-dato { min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--panel); }
+.ficha-dato small { display: block; color: var(--muted); font-size: 12px; }
+.ficha-dato strong, .ficha-dato a { display: block; margin-top: 3px; font-weight: 700; word-break: break-word; }
+.ficha-dato a { color: var(--accent); }
+.sin-dato { display: block; margin-top: 3px; color: var(--faint); font-style: italic; }
+.ficha-aviso { margin: 0; padding: 8px 12px; border-left: 3px solid var(--warn); border-radius: var(--radius-s); background: #fff7e6; }
+.ficha-cifra { min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: var(--radius-s); background: var(--panel); }
+.ficha-cifra small { display: block; color: var(--muted); font-size: 11.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.ficha-cifra strong { display: block; margin-top: 4px; color: var(--accent); font-size: 22px; line-height: 1.15; word-break: break-word; }
+.ficha-cifra span { display: block; margin-top: 2px; color: var(--faint); font-size: 12px; }
+.ficha-ofertas-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 8px; }
+.ficha-ofertas-cab h2 { margin: 0; font-size: 15px; }
+.ficha-buscar { flex: 1 1 220px; max-width: 360px; height: 34px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); }
+.ficha-buscar:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(1, 90, 170, .15); }
+.fo-cab, .fo-fila { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, .8fr) minmax(0, .9fr) minmax(0, .8fr) minmax(0, 1.5fr); gap: 10px; align-items: center; }
+.fo-cab { padding: 8px 12px; border: 1px solid var(--line); border-bottom: 0; border-radius: var(--radius-s) var(--radius-s) 0 0; background: var(--panel-2); color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.ficha-lista { max-height: min(46vh, 420px); overflow: auto; border: 1px solid var(--line); border-radius: 0 0 var(--radius-s) var(--radius-s); background: var(--panel); }
+.fo-fila { padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.fo-fila:last-child { border-bottom: 0; }
+.fo-fila.elegida { background: #eef8f3; }
+.fo-prod { min-width: 0; }
+.fo-valor { font-weight: 700; text-align: right; }
+.fo-puesto { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
+.fo-puesto.mejor { color: var(--good); font-weight: 700; }
+.fo-compra small { display: block; color: var(--muted); }
+.vacio-ficha { padding: 26px; color: var(--muted); text-align: center; }
+@media (max-width: 760px) {
+  .ficha-contacto, .ficha-cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fo-cab { display: none; }
+  .ficha-lista { border-radius: var(--radius-s); }
+  .fo-fila { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "p p" "v r" "u c"; row-gap: 5px; }
+  .fo-prod { grid-area: p; } .fo-valor { grid-area: v; text-align: left; } .fo-pres { grid-area: r; color: var(--muted); } .fo-puesto { grid-area: u; } .fo-compra { grid-area: c; }
+}
+
+/* ------------------------------------------------------------------ 5. Columna de solo lectura en Administración */
+.adm-tabla th.extra, .adm-tabla td.extra { background: var(--panel-2); }
+.adm-tabla td.extra { color: var(--accent); font-weight: 600; }
+.adm-tabla td.extra.vacia { color: var(--faint); font-weight: 400; }
+
+/* ------------------------------------------------------------------ 6. Ventana de espera «El viaje a la clínica» */
+dialog.modal.viaje { width: min(360px, 96vw); } /* pequeña: lo justo para ver al doctor llegar a la clínica (en el celular también) */
+.viaje-cuerpo { display: grid; gap: 8px; padding: 12px 14px 14px; background: var(--panel); }
+.viaje-cuerpo h2 { margin: 0; color: var(--accent); font-family: var(--font-display); font-size: 16px; font-weight: 600; }
+.viaje-escena { min-width: 0; }
+.viaje-escena[hidden] { display: none; }
+#vj-texto { min-height: 1.5em; margin: 0; color: var(--muted); font-size: 13px; font-weight: 600; }
+.vj-barra { height: 10px; overflow: hidden; border-radius: 6px; background: var(--panel-3); }
+#vj-progreso { width: 0; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--rojo), var(--warn), var(--accent-2)); transition: width .12s linear; }
+@media (prefers-reduced-motion: reduce) { #vj-progreso { transition: none; } }
+
+/* ------------------------------------------------------------------ 7. Barra superior en celular */
+.ruta { min-width: 0; flex: 0 1 auto; overflow: hidden; white-space: nowrap; }
+.ruta-actual { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 560px) {
+  .marca { width: auto; padding: 0 10px; } .marca strong { display: none; }
+  .alternar { width: 44px; }
+  .usuario-caja { padding-right: 6px; } .usuario-quien > span:last-child { display: none; }
+}
+
+/* ------------------------------------------------------------------ 8. Etiqueta «Nuevo» (productos y empresas que el sistema ve por primera vez) */
+.etq-nuevo { flex: none; display: inline-flex; align-items: center; padding: 0 7px; border: 1px solid #9bd3b0; border-radius: 2px; background: #e4f6ea; color: var(--good); font: 800 10.5px/1.75 var(--font); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.chip.hay-nuevos .n { background: #e4f6ea; color: var(--good); font-weight: 800; }
+.barra-prov .nombre .etq-nuevo { margin-left: 8px; }
+.cod-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.prov-fila { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.prov-fila .prov { flex: 0 1 auto; min-width: 0; }
+#emp-titulo .etq-nuevo, #of-sub .etq-nuevo { margin-left: 8px; vertical-align: middle; background: #fff; }
+
+/* ------------------------------------------------------------------ 9. «Stock suficiente» y «Menos de lo recomendado» (columna «Comprar») */
+.cantidad-pie { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 0; }
+.c-comprar .stock-suficiente, .stock-suficiente { display: inline-flex; align-items: center; gap: 4px; color: var(--good); font-size: 12px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.c-comprar > .stock-suficiente { font-size: 13px; }
+.c-comprar .cantidad-aviso, .cantidad-aviso { display: inline-flex; align-items: center; gap: 4px; color: #9a5a00; font-size: 11px; font-weight: 700; line-height: 1.25; text-align: right; text-transform: none; letter-spacing: 0; }
+
+/* ------------------------------------------------------------------ 10. Ventana «¿Está seguro de la cantidad a comprar?» (usa dlg-confirmar con cabecera azul) */
+dialog.confirmar.suave .v-cab { background: var(--accent); }
+dialog.confirmar .v-cuerpo .cf-cifra { font-size: 16px; }
+dialog.confirmar .v-cuerpo .cf-cifra b { color: var(--accent); font-size: 21px; }
+dialog.confirmar .v-cuerpo .cf-detalle { color: var(--muted); }
+dialog.confirmar .v-cuerpo .cf-aviso { display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px; border-left: 3px solid var(--warn); border-radius: var(--radius-s); background: #fff7e6; color: #7a4a00; font-weight: 600; }
+dialog.confirmar .v-cuerpo .cf-aviso svg { flex: none; margin-top: 2px; }
+dialog.confirmar .v-cuerpo .cf-nota { color: var(--faint); font-size: 12.5px; }
+
+/* ------------------------------------------------------------------ 11. Ventanas emergentes: movibles y adaptadas al celular
+   - MOVIBLES: se arrastra la cabecera (ratón o dedo); doble clic la devuelve al centro (js/util.js → hacerMovibles).
+   - CELULAR (hasta 560 px) o pantalla táctil: la ventana ocupa casi todo el ancho y alto, la cabecera y el pie se compactan, todos los
+     botones y campos miden al menos 44 px (el mínimo cómodo para el dedo) y las tablas anchas se vuelven tarjetas. */
+.v-cab.movible { cursor: grab; touch-action: none; user-select: none; }
+.v-cab.movible:active { cursor: grabbing; }
+@media (pointer: coarse) {
+  dialog.modal .btn, dialog.modal .btn-fila, dialog.modal .btn-icono, dialog.modal .pestana, dialog.modal select, dialog.modal button.etiqueta, dialog.modal .btn-elegir, dialog.modal .btn-quitar { min-height: 44px; }
+  dialog.modal .btn-icono, dialog.modal .btn-quitar { min-width: 44px; }
+}
+/* El nombre de la empresa es un enlace dentro de un texto: se ve igual, pero en pantallas táctiles el área que responde al dedo es más alta. */
+@media (pointer: coarse), (max-width: 560px) {
+  .enlace-empresa { position: relative; }
+  .enlace-empresa::after { content: ""; position: absolute; inset: -13px 0; }
+}
+@media (max-width: 560px) {
+  dialog.modal, dialog.modal.ancho, dialog.modal.extra, dialog.modal.confirmar, dialog.modal.confirmar-clave { width: calc(100vw - 12px); max-height: calc(100vh - 12px); max-height: calc(100dvh - 12px); border-radius: 14px; }
+  .v-cab { gap: 10px; padding: 12px 14px; }
+  .v-cab h1 { font-size: 16px; }
+  .v-cab p { font-size: 12px; }
+  .v-cuerpo { padding: 14px; }
+  .v-pie { padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .v-pie .btn { flex: 1 1 140px; justify-content: center; }
+  .v-pie .pista-pie { flex: 1 1 100%; }
+  dialog.modal .btn, dialog.modal .btn-fila, dialog.modal .btn-icono, dialog.modal .pestana, dialog.modal select, dialog.modal button.etiqueta, dialog.modal .btn-elegir, dialog.modal .btn-quitar, dialog.modal input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; }
+  dialog.modal .btn, dialog.modal .btn-fila { max-width: 100%; white-space: normal; text-align: center; }
+  dialog.modal .btn-icono { min-width: 44px; }
+  dialog.modal .pestanas { display: flex; flex-wrap: wrap; max-width: 100%; }
+  dialog.modal .pestana { flex: 1 1 auto; justify-content: center; }
+  /* historial de cambios: cada cambio es una tarjeta (la tabla de 4 columnas no cabe) */
+  .hist-tabla, .hist-tabla tbody, .hist-tabla tr, .hist-tabla td { display: block; width: auto; }
+  .hist-tabla thead { display: none; }
+  .hist-tabla tr { margin-bottom: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--panel); }
+  .hist-tabla td { padding: 2px 0; border: 0; }
+  .hist-tabla .h-fecha, .hist-tabla .h-acc { width: auto; text-align: left; }
+  .hist-tabla .h-acc { margin-top: 8px; }
+  .hist-tabla .h-acc .btn { width: 100%; height: 44px; justify-content: center; }
+}
+
+/* ------------------------------------------------------------------ 12. Inicio: logos de la Clínica y certificaciones
+   - ESQUINAS: el logo de Pabón S.A.S. arriba a la izquierda y el del Centro de Cuidados arriba a la derecha de la tarjeta de bienvenida.
+     En pantallas angostas (hasta 700 px) no caben junto al corazón del centro: pasan a una fila propia, arriba de la tarjeta.
+   - PIE: las certificaciones (ICONTEC, IQNET, INVIMA, BPM) van en una franja blanca en el CENTRO del pie, solo mientras se ve el inicio.
+     En pantallas medianas y angostas la franja baja a su propia fila, a todo el ancho. */
+.bienvenida { position: relative; }
+.bienvenida-logos { position: absolute; inset: 18px 22px auto; display: flex; align-items: flex-start; justify-content: space-between; pointer-events: none; }
+.bienvenida-logos img { display: block; height: auto; }
+.logo-pabon { width: 170px; }
+/* Sin el corazón en el centro, el título empieza debajo de los dos logos de las esquinas (que miden ~106 px de alto). */
+@media (min-width: 701px) { .bienvenida { padding-top: 130px; } }
+.logo-centro { width: 112px; }
+/* El inicio ocupa lo que sobra entre la barra y el pie (antes tenía una altura calculada a mano que suponía un pie de 66 px y, con las
+   certificaciones, la página crecía y el pie quedaba cortado). */
+.vista-inicio { flex: 1 1 auto; min-height: 0; }
+@media (max-width: 700px) {
+  .bienvenida-logos { position: static; width: 100%; align-items: center; margin: 0 0 12px; }
+  .logo-pabon { width: 136px; }
+  .logo-centro { width: 88px; }
+}
+.pie-marca { order: 1; }
+.pie-certs { display: none; order: 2; padding: 6px 14px; border-radius: 8px; background: #fff; }
+.pie > :last-child { order: 3; }
+.pie-certs img { display: block; height: 54px; width: auto; max-width: 100%; }
+body:has(#vista-inicio:not([hidden])) .pie-certs { display: block; }
+@media (max-width: 1100px) {
+  .pie-certs { flex: 1 1 100%; text-align: center; }
+  .pie-certs img { width: min(100%, 560px); height: auto; margin: 0 auto; }
+}
+
+/* ------------------------------------------------------------------ 13. Descargas que tardan en prepararse
+   Mientras el servidor arma el archivo (js/util.js → descargarConAviso) el botón se apaga, el cursor muestra que está trabajando y su icono gira. */
+a.preparando { opacity: .6; pointer-events: none; cursor: progress; }
+a.preparando svg { animation: gira .8s linear infinite; }
+@media (prefers-reduced-motion: reduce) { a.preparando svg { animation: none; } }
+
+/* ------------------------------------------------------------------ 14. El proveedor sube su ficha y el administrador la revisa
+   PROVEEDOR: «Enviar mi oferta» (subir la ficha, ver qué quedó y el estado de sus envíos).  ADMINISTRADOR: ventana «Ofertas de proveedores»
+   (lista de fichas → detalle frente a la mejor oferta de hoy → aprobar o rechazar). */
+.prov-envio { margin-bottom: 18px; padding: 18px 20px; }
+.prov-envio h2 { margin: 0 0 4px; font-size: 18px; }
+.prov-envio h3 { margin: 18px 0 8px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.prov-envio-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.prov-envio-cab p { margin: 0; color: var(--muted); max-width: 62ch; }
+#prov-subir { cursor: pointer; }
+.resultado-ok, .resultado-error { margin-top: 14px; padding: 12px 14px; border-radius: var(--radius-s); border-left: 3px solid var(--good); background: #ecf8f0; }
+.resultado-ok p, .resultado-error p { margin: 0 0 6px; }
+.resultado-error { border-left-color: var(--bad); background: #fdeeee; color: #8a1c1c; }
+.resultado-ok .resultado-error { margin-top: 10px; }
+.cifras-envio { margin: 0; padding-left: 20px; color: var(--muted); }
+.estado-lote { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.estado-lote.pendiente { background: #fff2d6; color: #8a5a00; }
+.estado-lote.aprobada { background: #ddf1e7; color: var(--good); }
+.estado-lote.rechazada, .estado-lote.reemplazada { background: #fbe1e1; color: #a02222; }
+.pend-tarjeta { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px 16px; padding: 12px 14px; margin-bottom: 10px; border: 1px solid var(--line); border-left: 4px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); }
+.pend-tarjeta.pendiente { border-left-color: var(--warn); }
+.pend-tarjeta.aprobada { border-left-color: var(--good); }
+.pend-tarjeta.rechazada { border-left-color: var(--bad); }
+.pend-info { display: grid; gap: 2px; min-width: 0; }
+.pend-resumen p { margin: 0 0 6px; }
+.pend-tabla td small { color: var(--muted); }
+@media (max-width: 560px) {
+  .pend-tarjeta { grid-template-columns: 1fr; }
+  .pend-tarjeta .btn { width: 100%; justify-content: center; }
+  /* el detalle: cada producto pasa a ser una tarjeta con sus datos rotulados */
+  .pend-tabla, .pend-tabla tbody, .pend-tabla tr, .pend-tabla td, .lb-tabla, .lb-tabla tbody, .lb-tabla tr, .lb-tabla td { display: block; width: auto; }
+  .pend-tabla thead, .lb-tabla thead { display: none; }
+  .pend-tabla tr, .lb-tabla tr { margin-bottom: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--panel); }
+  .pend-tabla td, .lb-tabla td { padding: 3px 0; border: 0; text-align: left; }
+  .pend-tabla td::before, .lb-tabla td::before { content: attr(data-et) ": "; color: var(--muted); font-size: 12px; font-weight: 700; }
+  .prov-envio-cab .btn { width: 100%; justify-content: center; }
+}
+
+/* ------------------------------------------------------------------ 15. Listas con buscador y descarga, y proveedor nuevo en el formulario de usuarios */
+.lb-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; }
+.lb-barra .buscador { flex: 1 1 260px; min-width: 0; }
+.lb-cuenta { white-space: nowrap; }
+.lb-mas { display: flex; justify-content: center; margin-top: 12px; }
+.pend-barra { padding: 12px 22px 0; margin-bottom: 0; }
+a.btn.desactivado { opacity: .5; pointer-events: none; }
+.alt-tabs { padding: 12px 22px 0; }
+.alt-intro { display: grid; gap: 12px; justify-items: start; max-width: 70ch; }
+.alt-intro p { margin: 0; }
+.acciones-cab .btn .n { margin-left: 6px; padding: 0 7px; border-radius: 2px; background: var(--panel-3); color: var(--muted); font-size: 11.5px; font-weight: 700; }
+.prov-nuevo { display: grid; gap: 10px; padding: 12px 14px; margin-top: 4px; border: 1px dashed var(--accent); border-radius: var(--radius-s); background: var(--panel-2); }
+.prov-nuevo p { margin: 0; }
+@media (max-width: 560px) { .lb-barra .btn { width: 100%; justify-content: center; } .alt-intro .btn { width: 100%; justify-content: center; } }

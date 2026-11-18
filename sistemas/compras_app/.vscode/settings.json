@@ -1,0 +1,26 @@
+{
+  // AJUSTES DE VS CODE para este proyecto (se comparten con todo el que lo abra).
+  // Nota: VS Code permite comentarios en estos archivos aunque JSON normal no.
+
+  // Pruebas: usar pytest y buscar las pruebas en la carpeta tests/.
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["tests"],
+  "python.testing.unittestEnabled": false,
+
+  // Al guardar un archivo Python: formatearlo con Ruff y ordenar sus imports.
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": { "source.organizeImports": "explicit" }
+  },
+
+  // Saltos de línea estilo Linux (\n) para que Git no marque todo como cambiado en Windows.
+  "files.eol": "\n",
+
+  // Ocultar del explorador los archivos temporales, y no buscar dentro del entorno ni de la base de datos.
+  "files.exclude": { "**/__pycache__": true, "**/.pytest_cache": true, "**/.ruff_cache": true },
+  "search.exclude": { "**/.venv": true, "data/compras.db*": true },
+
+  // Traer automáticamente los cambios nuevos de GitHub cada cierto tiempo.
+  "git.autofetch": true
+}

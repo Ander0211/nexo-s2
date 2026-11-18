@@ -1,0 +1,17 @@
+{
+  "ruta": "C:\\Users\\Db Developer\\Documents\\SENTINEL",
+  "intervalo": 30,
+  "activo": true,
+  "mtime": null,
+  "ultimo_sync": null,
+  "ultimo_error": null,
+  "ultimo_total": null,
+  "ultimo_hasta": null,
+  "archivo_usado": null,
+  "copias": "\\\\172.168.100.10\\copias;\\\\172.168.10.100",
+  "copias_activo": true,
+  "copias_stamp": null,
+  "copias_error": null,
+  "copias_nuevos": null,
+  "copias_vistos": null
+}

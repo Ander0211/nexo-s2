@@ -1,0 +1,13 @@
+{
+  "puerto_portal": 7000,
+  "sistemas": {
+    "sumipabon": {
+      "carpeta": "sistemas/compras_app",
+      "puerto": 8000
+    },
+    "sentinel": {
+      "carpeta": "sistemas/sentinel",
+      "puerto": 8080
+    }
+  }
+}

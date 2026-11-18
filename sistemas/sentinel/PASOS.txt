@@ -1,0 +1,118 @@
+SENTINEL PABON — PASOS EN EL PC Db Developer
+============================================
+
+Usted ya tiene la carpeta:
+  C:\Users\Db Developer\Documents\SENTINEL\workspace-...\sentinel
+
+El Excel de inventario va EN ESA carpeta sentinel (junto a server.py).
+Las copias nuevas (.bak) están en:
+  \\172.168.100.10\copias
+  \\172.168.10.100
+  (si la segunda pide carpeta: \\172.168.10.100\copias)
+
+
+PASO 1 — Instalar Python (solo la primera vez)
+----------------------------------------------
+En el Símbolo del sistema copie ESTA línea completa y pulse Enter:
+
+  winget install Python.Python.3.12 --accept-package-agreements --accept-source-agreements
+
+Si winget no existe:
+  1. Abra https://www.python.org/downloads/
+  2. Descargue e instale.
+  3. MARQUE la casilla "Add python.exe to PATH".
+  4. Install Now.
+
+CIERRE la ventana negra y ábrala de nuevo.
+
+
+PASO 2 — Comprobar Python
+-------------------------
+  py --version
+
+Debe decir Python 3.12 (o 3.13). Si dice que "py" no se reconoce,
+Python no quedó en el PATH: repita el PASO 1 y reinicie el PC.
+
+
+PASO 3 — Ir a la carpeta de SENTINEL
+------------------------------------
+  cd /d "C:\Users\Db Developer\Documents\SENTINEL"
+
+Si ahí hay una carpeta workspace-... entre:
+
+  cd workspace-01a18d72-87bc-7f7d-a036-6468086493f4\sentinel
+
+Debe ver server.py, iniciar-SENTINEL.bat y el Excel .xlsx
+(dir).
+
+
+PASO 4 — Copiar los archivos NUEVOS de este chat
+------------------------------------------------
+Vuelva a bajar / copiar de este workspace:
+  server.py
+  js\app.js
+  iniciar-SENTINEL.bat
+  config.json
+encima de los viejos, en esa misma carpeta sentinel.
+
+El Excel .xlsx NO lo borre.
+
+
+PASO 5 — Instalar la librería del Excel
+---------------------------------------
+  py -m pip install openpyxl
+
+(una sola línea; no la parta)
+
+
+PASO 6 — Probar que ve las copias de red
+----------------------------------------
+  dir "\\172.168.100.10\copias"
+  dir "\\172.168.10.100"
+  dir "\\172.168.10.100\copias"
+
+Si dice que no encuentra la ruta: en el Explorador de Windows
+abra cada una e inicie sesión. Luego repita dir.
+
+
+PASO 7 — Arrancar SENTINEL
+--------------------------
+Doble clic en:
+
+  iniciar-SENTINEL.bat
+
+O en la consola:
+
+  py server.py
+
+Deje la ventana ABIERTA.
+En el navegador abra:
+
+  http://localhost:8080
+
+
+PASO 8 — Comprobar la automatización
+------------------------------------
+Menú → Excel / inventario
+
+Debe verse:
+  Ruta:  C:\Users\Db Developer\Documents\SENTINEL
+  Copias nuevas:  \\172.168.100.10\copias ; \\172.168.10.100
+
+Pulse "Leer ahora" la primera vez.
+
+Cada 30 segundos:
+  - si cambia el Excel, actualiza tableros
+  - si aparece un .bak nuevo en \\172.168.100.10\copias o en \\172.168.10.100,
+    lo agrega al Excel (sin duplicar)
+  - la hoja Verificaciones NO se toca
+  - Resultado / RTO solo salen de ENVIAR
+
+
+SI ALGO FALLA
+-------------
+"py no se reconoce"     → PASO 1 y reinicie el PC.
+"No module openpyxl"    → PASO 5.
+"No se alcanza copias"  → PASO 6 (red / permisos).
+"No hay .xlsx"          → ponga el inventario .xlsx junto a server.py.
+La ventana se cierra     → no cierre el .bat; mire el error y no la cierre.

@@ -1,0 +1,29 @@
+{
+  // TAREAS: atajos para comandos frecuentes (Ctrl+Shift+P → «Tasks: Run Task»).
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Ctrl+Shift+B: inicia la aplicación (equivale a escribir «python run.py»).
+      "label": "Iniciar aplicación",
+      "type": "shell",
+      "command": "python run.py",
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      // Corre todas las pruebas.
+      "label": "Ejecutar pruebas",
+      "type": "shell",
+      "command": "python -m pytest",
+      "problemMatcher": [],
+      "group": { "kind": "test", "isDefault": true }
+    },
+    {
+      // Revisa el código en busca de errores y de estilo.
+      "label": "Revisar código (ruff)",
+      "type": "shell",
+      "command": "python -m ruff check .",
+      "problemMatcher": []
+    }
+  ]
+}

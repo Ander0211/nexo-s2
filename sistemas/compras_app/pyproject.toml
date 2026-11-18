@@ -1,0 +1,22 @@
+# CONFIGURACIÓN DE HERRAMIENTAS
+# =============================
+# pyproject.toml es el archivo estándar donde los proyectos Python guardan la configuración
+# de sus herramientas. Aquí: Ruff (revisor y formateador de código) y pytest (pruebas).
+
+[tool.ruff]
+line-length = 120 # largo máximo de línea al formatear
+target-version = "py311"
+
+[tool.ruff.lint]
+# Qué revisar: E/F = errores comunes · I = orden de imports · B = errores sutiles · UP = sintaxis moderna.
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"] # no avisar por líneas largas (el formateador ya las acomoda)
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI usa Depends() y Query() como valores por defecto a propósito; no es un error.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"] # dónde buscar las pruebas
+filterwarnings = ["ignore::DeprecationWarning"] # ocultar avisos de librerías que cambiarán a futuro
+markers = ["e2e: prueba de interfaz con navegador (necesita playwright)"]

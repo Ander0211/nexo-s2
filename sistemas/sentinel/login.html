@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ingresar · SENTINEL PABON</title>
+  <link rel="icon" href="assets/logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/acceso.css">
+</head>
+<body class="acceso">
+  <main class="acceso-tarjeta">
+    <img class="acceso-logo" src="assets/logo.png" alt="">
+    <p class="acceso-sede">Clinica Cardioneurovascular PABON</p>
+    <h1>SENTINEL <em>PABON</em></h1>
+
+    <!-- Ingreso normal -->
+    <form id="fIngreso" hidden>
+      <p class="acceso-sub" id="subIngreso">Ingrese con su usuario y clave.</p>
+      <label>Usuario<input id="iUsuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required></label>
+      <label>Clave<input id="iClave" type="password" autocomplete="current-password" required></label>
+      <p class="acceso-error" id="eIngreso" role="alert" hidden></p>
+      <button class="acceso-btn" type="submit" id="bIngresar">Ingresar</button>
+    </form>
+
+    <!-- Primera vez: crear el administrador -->
+    <form id="fPrimera" hidden>
+      <p class="acceso-sub">Primera vez: cree la cuenta del <b>administrador</b>. Después, desde «Usuarios», podrá crear revisores.</p>
+      <label>Nombre<input id="pNombre" autocomplete="name" required></label>
+      <label>Usuario<input id="pUsuario" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="ej. sistemas"></label>
+      <label>Clave (mínimo 8)<input id="pClave" type="password" autocomplete="new-password" required minlength="8"></label>
+      <label>Repita la clave<input id="pClave2" type="password" autocomplete="new-password" required minlength="8"></label>
+      <label>Correo <small>(opcional)</small><input id="pCorreo" type="email" autocomplete="email" placeholder="nombre@dominio.com"></label>
+      <label>Celular / WhatsApp <small>(opcional)</small><input id="pCelular" type="tel" autocomplete="tel" placeholder="300 123 4567"></label>
+      <p class="acceso-error" id="ePrimera" role="alert" hidden></p>
+      <button class="acceso-btn" type="submit">Crear administrador e ingresar</button>
+    </form>
+
+    <!-- Clave temporal: elegir la propia -->
+    <form id="fCambiar" hidden>
+      <p class="acceso-sub">Está usando una <b>clave temporal</b>. Elija ahora su propia clave para continuar.</p>
+      <label id="lActual">Clave temporal<input id="kActual" type="password" autocomplete="current-password" required></label>
+      <label>Clave nueva (mínimo 8)<input id="kNueva" type="password" autocomplete="new-password" required minlength="8"></label>
+      <label>Repita la clave nueva<input id="kNueva2" type="password" autocomplete="new-password" required minlength="8"></label>
+      <p class="acceso-error" id="eCambiar" role="alert" hidden></p>
+      <button class="acceso-btn" type="submit">Guardar mi clave y entrar</button>
+    </form>
+
+    <p class="acceso-aviso" id="aRemoto" hidden>SENTINEL aún no tiene administrador. La primera cuenta se crea desde el PC donde corre SENTINEL (http://localhost:8080).</p>
+
+    <a class="nexo-volver nexo-ancho" data-nexo-volver href="http://localhost:7000/">
+      <img src="assets/nexo-icono.png" alt="" width="22" height="22">Volver a Nexo S²</a>
+  </main>
+  <script src="js/nexo.js"></script>
+  <script src="js/ojo.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

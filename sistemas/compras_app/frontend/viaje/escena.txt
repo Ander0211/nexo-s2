@@ -1,0 +1,612 @@
+<style>
+:host{
+      --ink:#12100e;
+      --cream:#fff2cf;
+      --cream-2:#ffd98d;
+      --red:#df2432;
+      --red-dark:#8d1420;
+      --blue:#1aa7df;
+      --blue-dark:#075f95;
+      --glass:#8ce4ff;
+      --brown:#704531;
+      --brown-2:#4a2c20;
+      --white:#fffaf0;
+      --shadow:rgba(34, 18, 8, .32);
+    }
+*{box-sizing:border-box}
+.animation-window{
+      position:relative;
+      isolation:isolate;
+      border:7px solid var(--ink);
+      border-radius:34px;
+      background:#1b150f;
+      box-shadow:
+        0 34px 84px rgba(19,16,14,.30),
+        inset 0 0 0 4px rgba(255,255,255,.13);
+      overflow:hidden;
+    }
+.stage{
+      position:relative;
+      height:580px;
+      background:
+        radial-gradient(circle at 37% 28%, rgba(255,255,255,.44), transparent 22%),
+        radial-gradient(circle at 71% 36%, rgba(255,255,255,.18), transparent 22%),
+        linear-gradient(180deg, #fff3c9 0%, #ffdc91 55%, #d99a51 100%);
+      overflow:hidden;
+    }
+.stage::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:5;
+      pointer-events:none;
+      opacity:.17;
+      mix-blend-mode:multiply;
+      background:
+        radial-gradient(circle, rgba(18,16,14,.25) .8px, transparent 1.2px),
+        repeating-linear-gradient(90deg, transparent 0 74px, rgba(23,18,13,.17) 75px 77px, transparent 78px 150px);
+      background-size:9px 9px, 150px 100%;
+      animation:filmDirt 1.1s steps(5,end) infinite;
+    }
+.stage::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:6;
+      pointer-events:none;
+      background:radial-gradient(ellipse at center, transparent 51%, rgba(25,15,9,.20) 100%);
+      mix-blend-mode:multiply;
+    }
+.sunburst{
+      position:absolute;
+      inset:-30% -10% 28% -10%;
+      z-index:0;
+      background:conic-gradient(from -14deg at 50% 74%, rgba(255,255,255,.38) 0 9deg, transparent 9deg 18deg);
+      opacity:.42;
+      animation:sunSway 7s ease-in-out infinite alternate;
+    }
+.ground{
+      position:absolute;
+      left:-7%;
+      right:-7%;
+      bottom:-58px;
+      height:178px;
+      z-index:1;
+      border-top:6px solid #221812;
+      border-radius:55% 55% 0 0;
+      background:
+        repeating-linear-gradient(110deg, rgba(255,255,255,.12) 0 10px, transparent 11px 22px),
+        linear-gradient(180deg, #d5893e, #9a5b2e);
+      box-shadow:inset 0 14px 0 rgba(255,255,255,.15);
+    }
+svg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:3;
+      overflow:visible;
+    }
+.route-back{
+      fill:none;
+      stroke:#342217;
+      stroke-width:18;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      opacity:.25;
+    }
+.route{
+      fill:none;
+      stroke:#fff6d8;
+      stroke-width:9;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      stroke-dasharray:15 16;
+      filter:drop-shadow(0 8px 0 rgba(35,21,9,.13));
+      animation:dashRoad .52s linear infinite;
+    }
+.route-ink{
+      fill:none;
+      stroke:#1b1714;
+      stroke-width:3;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      stroke-dasharray:2 22;
+      opacity:.42;
+      animation:dashRoad .52s linear infinite reverse;
+    }
+.inked{filter:url(#wiggleInk)}
+#heartMascot{
+      transform-box:fill-box;
+      transform-origin:center;
+      will-change:transform, opacity;
+      filter:drop-shadow(13px 17px 0 rgba(35,21,9,.16));
+    }
+.doctor-runner{
+      transform-origin:center bottom;
+      transform-box:fill-box;
+      animation:doctorRunnerWalk .64s ease-in-out infinite;
+    }
+.cuphead-photo-wrap{
+      transform-origin:center bottom;
+      transform-box:fill-box;
+    }
+.cuphead-photo-character{
+      transform-origin:center bottom;
+      transform-box:fill-box;
+      animation:cupheadWalkJitter .32s steps(2,end) infinite;
+      filter:saturate(1.08) contrast(1.06) drop-shadow(7px 9px 0 rgba(35,21,9,.18));
+      image-rendering:auto;
+    }
+.cuphead-leg{
+      animation-duration:.64s;
+      animation-timing-function:ease-in-out;
+      animation-iteration-count:infinite;
+    }
+.cuphead-leg-back{
+      transform-origin:-42px -40px;
+      animation-name:cupheadLegSwingBack;
+    }
+.cuphead-leg-front{
+      transform-origin:5px -54px;
+      animation-name:cupheadLegSwingFront;
+    }
+.cuphead-arm-back{
+      transform-origin:-60px -116px;
+      animation:cupheadArmSwingBack .64s ease-in-out infinite;
+    }
+.runner-shadow{
+      transform-origin:center;
+      transform-box:fill-box;
+      animation:runnerShadowWalk .64s ease-in-out infinite;
+    }
+.walk-dust{
+      opacity:0;
+      transform-origin:center;
+      transform-box:fill-box;
+      animation:footDust .64s ease-out infinite;
+    }
+.walk-dust-right{animation-delay:.32s;}
+.speed-line{opacity:0; animation:speedLine .33s ease-out infinite; transform-box:fill-box;}
+.speed-line:nth-child(2){animation-delay:.07s}
+.speed-line:nth-child(3){animation-delay:.14s}
+.speed-line:nth-child(4){animation-delay:.21s}
+.motion-star{opacity:0; transform-origin:center;}
+#heartMascot.pop .motion-star{animation:starPop .62s ease-out both;}
+#heartMascot.pop .motion-star:nth-of-type(2){animation-delay:.08s}
+#heartMascot.pop .motion-star:nth-of-type(3){animation-delay:.16s}
+#heartMascot.hide{animation:exitSpin .46s ease-in both;}
+#clinicPabon{
+      transform-box:fill-box;
+      transform-origin:center bottom;
+    }
+#clinicPabon .building-animated{
+      transform-origin:center bottom;
+      transform-box:fill-box;
+      filter:drop-shadow(14px 20px 0 rgba(35,21,9,.15));
+      animation:buildingIdle .92s cubic-bezier(.25,1.6,.45,.92) infinite;
+    }
+#clinicPabon.near .building-animated{animation-duration:.58s;}
+#clinicPabon.excited .building-animated{animation-duration:.34s;}
+#clinicPabon.arrived .building-animated{animation:buildingBoing .94s cubic-bezier(.15,1.6,.35,1) both;}
+.building-shadow{transform-origin:center; transform-box:fill-box; animation:buildingShadowPulse .92s ease-in-out infinite;}
+.facade-main{transform-origin:center bottom; transform-box:fill-box; animation:facadeBreath .92s ease-in-out infinite;}
+.tower-glass{transform-origin:center bottom; transform-box:fill-box; animation:towerWobble .66s ease-in-out infinite;}
+.gray-tower{transform-origin:center bottom; transform-box:fill-box; animation:grayTowerWobble .8s ease-in-out infinite;}
+.roof-sign{transform-origin:center; transform-box:fill-box; animation:signPulse .9s steps(2,end) infinite;}
+.base-sign{transform-origin:center; transform-box:fill-box; animation:signPulse .74s steps(2,end) infinite;}
+.pabon-heart-logo{transform-origin:center; transform-box:fill-box; animation:logoHeartBeat .46s cubic-bezier(.24,1.8,.52,.92) infinite;}
+#clinicPabon.near .pabon-heart-logo, #clinicPabon.excited .pabon-heart-logo{animation-duration:.30s;}
+.louver-line{animation:louverShimmy .43s steps(2,end) infinite; transform-origin:center; transform-box:fill-box;}
+.louver-line:nth-child(odd){animation-delay:.08s;}
+.glass-shine{animation:shineSweep 1.15s linear infinite; transform-box:fill-box;}
+.window-blue{animation:windowPop .68s steps(2,end) infinite; transform-origin:center; transform-box:fill-box;}
+.window-blue:nth-child(2n){animation-delay:.16s;}
+.building-arm{transform-origin:center; transform-box:fill-box;}
+.building-arm.left{animation:buildingLeftWave .48s ease-in-out infinite;}
+.building-arm.right{animation:buildingRightWave .48s ease-in-out infinite;}
+#clinicPabon.excited .building-arm.left, #clinicPabon.excited .building-arm.right{animation-duration:.26s;}
+.entrance-door{transform-origin:center bottom; transform-box:fill-box; animation:doorKnock .72s ease-in-out infinite;}
+#clinicPabon.arrived .entrance-door{animation:doorOpen .72s ease-in-out both;}
+.welcome-rays path{opacity:0; stroke-dasharray:10 13; animation:rayFlash .72s ease-out infinite;}
+.welcome-rays path:nth-child(2){animation-delay:.16s;}
+.welcome-rays path:nth-child(3){animation-delay:.31s;}
+#clinicPabon.near .welcome-rays path, #clinicPabon.excited .welcome-rays path{animation-duration:.38s;}
+.ambulance{transform-origin:center bottom; transform-box:fill-box; animation:ambulanceBounce .5s ease-in-out infinite;}
+.ambulance-siren{animation:sirenFlash .28s steps(2,end) infinite;}
+.wheel{transform-origin:center; transform-box:fill-box; animation:wheelSpin .42s linear infinite;}
+#poof{opacity:0; pointer-events:none; transform-origin:center;}
+#poof.show{animation:poof .72s cubic-bezier(.15,1.3,.35,1) both;}
+@keyframes filmDirt{
+      0%{transform:translate(0,0); opacity:.14}
+      25%{transform:translate(-2px,1px); opacity:.20}
+      50%{transform:translate(2px,-1px); opacity:.16}
+      75%{transform:translate(-1px,-2px); opacity:.22}
+      100%{transform:translate(0,0); opacity:.15}
+    }
+@keyframes sunSway{to{transform:rotate(3deg) scale(1.04)}}
+@keyframes dashRoad{to{stroke-dashoffset:-31}}
+@keyframes cupheadWalkJitter{
+      0%,100%{transform:translate(0,0)}
+      50%{transform:translate(.6px,-.4px)}
+    }
+@keyframes cupheadLegSwingBack{
+      0%{transform:rotate(-13deg)}
+      50%{transform:rotate(17deg)}
+      100%{transform:rotate(-13deg)}
+    }
+@keyframes cupheadLegSwingFront{
+      0%{transform:rotate(15deg)}
+      50%{transform:rotate(-14deg)}
+      100%{transform:rotate(15deg)}
+    }
+@keyframes cupheadArmSwingBack{
+      0%{transform:rotate(-18deg)}
+      50%{transform:rotate(19deg)}
+      100%{transform:rotate(-18deg)}
+    }
+@keyframes runnerShadowWalk{
+      0%,50%,100%{transform:scaleX(1.14) scaleY(1.04); opacity:.32}
+      25%,75%{transform:scaleX(.72) scaleY(.86); opacity:.13}
+    }
+@keyframes footDust{
+      0%{opacity:0; transform:translate(1px,2px) scale(.3)}
+      9%{opacity:.9; transform:translate(-2px,0) scale(.8)}
+      55%,100%{opacity:0; transform:translate(-16px,-10px) scale(1.4)}
+    }
+@keyframes doctorRunnerWalk{
+      0%,50%,100%{transform:translateX(2px) translateY(7px) rotate(4deg) scale(1.13,.84)}
+      25%,75%{transform:translateX(-1.5px) translateY(-12px) rotate(-3.5deg) scale(.92,1.14)}
+    }
+@keyframes speedLine{
+      0%{opacity:0; transform:translateX(0) scaleX(.58)}
+      18%{opacity:.88}
+      100%{opacity:0; transform:translateX(-62px) scaleX(1.45)}
+    }
+@keyframes starPop{
+      0%{opacity:0; transform:scale(.15) rotate(0deg)}
+      38%{opacity:1; transform:scale(1.15) rotate(18deg)}
+      100%{opacity:0; transform:scale(.7) rotate(120deg)}
+    }
+@keyframes buildingIdle{
+      0%,100%{transform:translateY(0) rotate(-.35deg) scale(1)}
+      35%{transform:translateY(-7px) rotate(.55deg) scale(1.012,.986)}
+      62%{transform:translateY(2px) rotate(-.22deg) scale(.992,1.018)}
+    }
+@keyframes buildingShadowPulse{
+      0%,100%{transform:scaleX(1); opacity:.24}
+      50%{transform:scaleX(.86); opacity:.16}
+    }
+@keyframes facadeBreath{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.008,.992)}
+    }
+@keyframes towerWobble{
+      0%,100%{transform:rotate(-.65deg) translateY(0)}
+      50%{transform:rotate(.9deg) translateY(-4px)}
+    }
+@keyframes grayTowerWobble{
+      0%,100%{transform:rotate(.35deg) translateY(0)}
+      50%{transform:rotate(-.45deg) translateY(-2px)}
+    }
+@keyframes signPulse{
+      0%,100%{filter:brightness(1)}
+      50%{filter:brightness(1.18) saturate(1.18)}
+    }
+@keyframes logoHeartBeat{
+      0%,100%{transform:scale(1)}
+      25%{transform:scale(1.16,.88)}
+      52%{transform:scale(.92,1.12)}
+    }
+@keyframes louverShimmy{
+      0%,100%{transform:translateX(-2px)}
+      50%{transform:translateX(2px)}
+    }
+@keyframes shineSweep{
+      0%{transform:translateX(-74px); opacity:0}
+      22%{opacity:.72}
+      100%{transform:translateX(118px); opacity:0}
+    }
+@keyframes windowPop{
+      0%,100%{transform:scale(1); opacity:1}
+      50%{transform:scale(1.06,.92); opacity:.82}
+    }
+@keyframes buildingLeftWave{
+      0%,100%{transform:rotate(13deg) translateY(0)}
+      50%{transform:rotate(-24deg) translateY(-8px)}
+    }
+@keyframes buildingRightWave{
+      0%,100%{transform:rotate(-13deg) translateY(0)}
+      50%{transform:rotate(24deg) translateY(-8px)}
+    }
+@keyframes doorKnock{
+      0%,100%{transform:rotate(0deg)}
+      35%{transform:rotate(-2.8deg)}
+      65%{transform:rotate(2.8deg)}
+    }
+@keyframes doorOpen{
+      0%{transform:scaleY(1); fill:#111}
+      55%{transform:scaleY(.12); fill:#ffd166}
+      100%{transform:scaleY(.18); fill:#ffd166}
+    }
+@keyframes rayFlash{
+      0%{opacity:0; stroke-dashoffset:24; transform:scale(.9)}
+      30%{opacity:1}
+      100%{opacity:0; stroke-dashoffset:-24; transform:scale(1.06)}
+    }
+@keyframes ambulanceBounce{
+      0%,100%{transform:translateY(0) rotate(-.7deg)}
+      50%{transform:translateY(-4px) rotate(.7deg)}
+    }
+@keyframes sirenFlash{50%{fill:#fff1cf}}
+@keyframes wheelSpin{to{transform:rotate(360deg)}}
+@keyframes buildingBoing{
+      0%{transform:translateY(0) scale(1)}
+      22%{transform:translateY(-20px) scale(1.04,.92)}
+      48%{transform:translateY(5px) scale(.96,1.06)}
+      70%{transform:translateY(-7px) scale(1.02,.98)}
+      100%{transform:translateY(0) scale(1)}
+    }
+@keyframes poof{
+      0%{opacity:0; transform:translate(0,8px) scale(.34) rotate(-8deg)}
+      24%{opacity:1}
+      100%{opacity:0; transform:translate(0,-22px) scale(1.45) rotate(16deg)}
+    }
+@keyframes exitSpin{
+      100%{opacity:0; transform:translate(784px, 36px) rotate(720deg) scale(.06)!important;}
+    }
+/* ---- Ajustes para la aplicación ---- */
+:host { display: block; }
+.animation-window { border-width: 3px; border-radius: 16px; box-shadow: none; }
+.stage { height: auto; aspect-ratio: 1040 / 580; }
+.stage::before { animation-duration: 1.6s; opacity: .1; }
+@media (prefers-reduced-motion: reduce) { * , *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+<div class="animation-window">
+<div class="stage">
+        <div class="sunburst" aria-hidden="true"></div>
+        <div class="ground" aria-hidden="true"></div>
+
+        <svg viewBox="0 0 1040 580" role="img" aria-label="Doctor caricaturesco de cuerpo completo viajando hasta un edificio inspirado en Clínica Cardio Pabón de Pasto">
+          <defs>
+            <filter id="wiggleInk" x="-40%" y="-40%" width="180%" height="180%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="12" result="noise">
+                <animate attributeName="baseFrequency" values="0.014;0.021;0.016;0.019;0.014" dur="0.38s" repeatCount="indefinite"/>
+              </feTurbulence>
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.35" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+            <linearGradient id="heartRed" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff9a8e"/>
+              <stop offset=".38" stop-color="#df2432"/>
+              <stop offset="1" stop-color="#8d1420"/>
+            </linearGradient>
+            <linearGradient id="glove" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffffff"/>
+              <stop offset="1" stop-color="#ffe6b0"/>
+            </linearGradient>
+            <linearGradient id="glassBlue" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#d4f6ff"/>
+              <stop offset=".46" stop-color="#42c6f4"/>
+              <stop offset="1" stop-color="#0875b4"/>
+            </linearGradient>
+            <linearGradient id="buildingWhite" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#fffdf4"/>
+              <stop offset="1" stop-color="#e9f5f4"/>
+            </linearGradient>
+            <linearGradient id="brownBase" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#8b5d43"/>
+              <stop offset="1" stop-color="#4a2c20"/>
+            </linearGradient>
+            <g id="pabonHeartMark">
+              <path d="M-23 -6 C-36 -28 -62 -15 -57 11 C-52 37 -4 56 0 62 C4 56 52 37 57 11 C62 -15 36 -28 23 -6 C12 -18 -12 -18 -23 -6Z" fill="url(#heartRed)" stroke="#111" stroke-width="6" stroke-linejoin="round"/>
+              <path d="M-42 13 H-22 L-12 -4 L4 34 L20 -16 L31 13 H45" fill="none" stroke="#fffaf0" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M-42 13 H-22 L-12 -4 L4 34 L20 -16 L31 13 H45" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".28"/>
+            </g>
+            <clipPath id="doctorAvatarClip" clipPathUnits="userSpaceOnUse">
+              <rect x="-53" y="-156" width="106" height="168" rx="24"/>
+            </clipPath>
+            <clipPath id="realClinicPhotoClip" clipPathUnits="objectBoundingBox">
+              <rect x="0" y="0" width="1" height="1" rx="0.035"/>
+            </clipPath>
+            <clipPath id="cupheadTorsoClip" clipPathUnits="userSpaceOnUse">
+              <rect x="-102" y="-271" width="204" height="137"/>
+              <rect x="-102" y="-134" width="204" height="19.5"/>
+              <rect x="-52.6" y="-114.5" width="154.6" height="63.5"/>
+              <rect x="-102" y="-51" width="204" height="5"/>
+              <rect x="-102" y="-46" width="204" height="34"/>
+            </clipPath>
+            <clipPath id="cupheadArmBackClip" clipPathUnits="userSpaceOnUse">
+              <rect x="-101" y="-114.5" width="48.4" height="63.5"/>
+            </clipPath>
+            <clipPath id="cupheadLegBackClip" clipPathUnits="userSpaceOnUse">
+              <rect x="-102" y="-40" width="79" height="118"/>
+            </clipPath>
+            <clipPath id="cupheadLegFrontClip" clipPathUnits="userSpaceOnUse">
+              <rect x="-23" y="-54" width="125" height="132"/>
+            </clipPath>
+            <image id="doctorProfileSrc" href="/static/viaje/doctor.webp" x="-101" y="-270" width="202" height="318" preserveAspectRatio="xMidYMid meet"/>
+          </defs>
+
+          <path id="routeBack" class="route-back" d="M54 448 C96 314 176 532 255 420 C332 305 430 332 365 420 C300 505 472 512 535 400 C604 279 660 330 615 412 C584 497 685 482 760 438"/>
+          <path id="routePath" class="route" d="M54 448 C96 314 176 532 255 420 C332 305 430 332 365 420 C300 505 472 512 535 400 C604 279 660 330 615 412 C584 497 685 482 760 438"/>
+          <path class="route-ink" d="M54 448 C96 314 176 532 255 420 C332 305 430 332 365 420 C300 505 472 512 535 400 C604 279 660 330 615 412 C584 497 685 482 760 438"/>
+
+          <g transform="translate(62 457)" class="inked">
+            <ellipse cx="0" cy="38" rx="58" ry="16" fill="#21150d" opacity=".22"/>
+            <use href="#pabonHeartMark" transform="scale(.9)"/>
+            <text x="-52" y="82" fill="#111" font-size="25" font-weight="1000" letter-spacing="2">INICIO</text>
+          </g>
+
+          <g id="clinicPabon" transform="translate(555 48)" class="inked">
+            <g class="welcome-rays" fill="none" stroke="#fff1cf" stroke-width="8" stroke-linecap="round">
+              <path d="M-20 120 C-61 87 -86 51 -100 10"/>
+              <path d="M192 -16 V-65"/>
+              <path d="M433 116 C478 82 499 44 508 4"/>
+            </g>
+
+            <g class="building-arm left">
+              <path d="M4 300 C-45 288 -70 256 -58 226" fill="none" stroke="#111" stroke-width="9" stroke-linecap="round"/>
+              <path d="M-61 220 C-82 205 -67 178 -45 192 C-36 171 -6 187 -22 211 C-30 224 -44 229 -61 220Z" fill="url(#glove)" stroke="#111" stroke-width="6" stroke-linejoin="round"/>
+            </g>
+            <g class="building-arm right">
+              <path d="M402 319 C459 301 482 263 465 234" fill="none" stroke="#111" stroke-width="9" stroke-linecap="round"/>
+              <path d="M466 228 C489 212 509 238 489 256 C510 272 486 297 466 277 C454 264 454 244 466 228Z" fill="url(#glove)" stroke="#111" stroke-width="6" stroke-linejoin="round"/>
+            </g>
+
+            <g class="building-animated">
+              <ellipse class="building-shadow" cx="210" cy="455" rx="236" ry="28" fill="#21150d" opacity=".24"/>
+
+              <g class="left-neighbor" opacity=".92">
+                <path d="M-42 72 H40 V430 H-42 Z" fill="#d6c4a8" stroke="#111" stroke-width="6"/>
+                <rect class="window-blue" x="-22" y="106" width="28" height="24" rx="4" fill="#9fe8ff" stroke="#111" stroke-width="3"/>
+                <rect class="window-blue" x="11" y="106" width="20" height="24" rx="4" fill="#9fe8ff" stroke="#111" stroke-width="3"/>
+                <rect class="window-blue" x="-22" y="164" width="28" height="24" rx="4" fill="#9fe8ff" stroke="#111" stroke-width="3"/>
+                <rect class="window-blue" x="11" y="164" width="20" height="24" rx="4" fill="#9fe8ff" stroke="#111" stroke-width="3"/>
+                <rect class="window-blue" x="-22" y="222" width="28" height="24" rx="4" fill="#9fe8ff" stroke="#111" stroke-width="3"/>
+                <rect class="window-blue" x="11" y="222" width="20" height="24" rx="4" fill="#9fe8ff" stroke="#111" stroke-width="3"/>
+                <rect class="window-blue" x="-22" y="280" width="28" height="24" rx="4" fill="#9fe8ff" stroke="#111" stroke-width="3"/>
+                <rect class="window-blue" x="11" y="280" width="20" height="24" rx="4" fill="#9fe8ff" stroke="#111" stroke-width="3"/>
+              </g>
+
+              <g class="facade-main">
+                <path d="M28 55 L274 36 L274 430 L28 430 Z" fill="url(#buildingWhite)" stroke="#111" stroke-width="7" stroke-linejoin="round"/>
+                <path d="M29 102 H274 V139 H29 Z" fill="#5bc8ef" stroke="#111" stroke-width="5"/>
+                <path d="M55 53 H262 L262 109 H55 Z" fill="#fffaf0" stroke="#111" stroke-width="5"/>
+
+                <g transform="translate(0 0)">
+                  <g class="roof-sign">
+                    <g transform="translate(80 84) scale(.21)"><g class="pabon-heart-logo"><use href="#pabonHeartMark"/></g></g>
+                    <text x="185" y="76" text-anchor="middle" fill="#b81f2e" font-size="20" font-weight="900" font-family="Georgia, cursive">Clínica</text>
+                    <text x="185" y="103" text-anchor="middle" fill="#b81f2e" font-size="34" font-weight="900" font-family="Georgia, cursive">Pabón</text>
+                  </g>
+                </g>
+
+                <g class="left-windows">
+                  <rect class="window-blue" x="51" y="160" width="48" height="34" rx="5" fill="#52c9f4" stroke="#111" stroke-width="4"/>
+                  <rect class="window-blue" x="51" y="217" width="48" height="34" rx="5" fill="#52c9f4" stroke="#111" stroke-width="4"/>
+                  <rect class="window-blue" x="51" y="274" width="48" height="34" rx="5" fill="#52c9f4" stroke="#111" stroke-width="4"/>
+                  <rect class="window-blue" x="51" y="331" width="48" height="34" rx="5" fill="#52c9f4" stroke="#111" stroke-width="4"/>
+                  <path d="M54 177 H96 M54 234 H96 M54 291 H96 M54 348 H96" stroke="#fffaf0" stroke-width="4" stroke-linecap="round" opacity=".85"/>
+                </g>
+
+                <g class="louver-panel">
+                  <rect x="120" y="154" width="132" height="160" fill="#d7d6c5" stroke="#111" stroke-width="5"/>
+                  <rect x="132" y="165" width="108" height="138" fill="#b8c1c0" opacity=".55"/>
+                  <path class="louver-line" d="M126 168 H247" stroke="#4d5656" stroke-width="5" stroke-linecap="round"/>
+                  <path class="louver-line" d="M126 183 H247" stroke="#4d5656" stroke-width="5" stroke-linecap="round"/>
+                  <path class="louver-line" d="M126 198 H247" stroke="#4d5656" stroke-width="5" stroke-linecap="round"/>
+                  <path class="louver-line" d="M126 213 H247" stroke="#4d5656" stroke-width="5" stroke-linecap="round"/>
+                  <path class="louver-line" d="M126 228 H247" stroke="#4d5656" stroke-width="5" stroke-linecap="round"/>
+                  <path class="louver-line" d="M126 243 H247" stroke="#4d5656" stroke-width="5" stroke-linecap="round"/>
+                  <path class="louver-line" d="M126 258 H247" stroke="#4d5656" stroke-width="5" stroke-linecap="round"/>
+                  <path class="louver-line" d="M126 273 H247" stroke="#4d5656" stroke-width="5" stroke-linecap="round"/>
+                  <path class="louver-line" d="M126 288 H247" stroke="#4d5656" stroke-width="5" stroke-linecap="round"/>
+                  <path d="M155 158 V310 M191 158 V310 M226 158 V310" stroke="#111" stroke-width="3" opacity=".45"/>
+                </g>
+              </g>
+
+              <g class="tower-glass">
+                <path d="M274 30 H363 V431 H274 Z" fill="url(#glassBlue)" stroke="#111" stroke-width="7"/>
+                <path class="glass-shine" d="M287 37 L337 37 L300 426 L250 426 Z" fill="#fff" opacity=".38"/>
+                <path d="M274 91 H363 M274 152 H363 M274 213 H363 M274 274 H363 M274 335 H363 M318 30 V431" stroke="#075f95" stroke-width="4" opacity=".75"/>
+                <path d="M288 42 C313 78 330 128 327 190 C325 245 346 290 351 343" fill="none" stroke="#e8fbff" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+              </g>
+
+              <g class="gray-tower">
+                <path d="M358 8 H438 V430 H358 Z" fill="#b6b8b7" stroke="#111" stroke-width="7"/>
+                <path d="M370 26 H426 V72 H370 Z" fill="#9fe8ff" stroke="#111" stroke-width="5"/>
+                <path d="M358 128 H438 M358 196 H438 M358 264 H438 M358 332 H438" stroke="#8c8f8e" stroke-width="4" opacity=".55"/>
+                <path d="M372 22 L425 22" stroke="#fffaf0" stroke-width="5" stroke-linecap="round" opacity=".6"/>
+              </g>
+
+              <g class="base-block">
+                <path d="M-8 344 H407 V430 H-8 Z" fill="url(#brownBase)" stroke="#111" stroke-width="7"/>
+                <path class="base-sign" d="M46 350 H370 V384 H46 Z" fill="#fffaf0" stroke="#111" stroke-width="5"/>
+                <text class="base-sign" x="65" y="376" fill="#d52432" font-size="28" font-weight="1000" letter-spacing="5">CLÍNICA PABÓN</text>
+                <rect x="21" y="386" width="126" height="35" fill="#5bc8ef" stroke="#111" stroke-width="5"/>
+                <rect class="entrance-door" x="166" y="386" width="66" height="44" rx="9" fill="#111" stroke="#111" stroke-width="5"/>
+                <rect x="244" y="388" width="118" height="33" fill="#9fe8ff" stroke="#111" stroke-width="5"/>
+                <path d="M30 397 H140 M254 399 H354" stroke="#fffaf0" stroke-width="4" opacity=".75"/>
+              </g>
+
+              <g transform="translate(332 392)">
+                <g class="ambulance">
+                  <rect x="0" y="20" width="98" height="34" rx="8" fill="#fffaf0" stroke="#111" stroke-width="5"/>
+                  <path d="M65 20 H95 L111 37 V54 H65 Z" fill="#e6fbff" stroke="#111" stroke-width="5"/>
+                  <path d="M18 31 V45 M10 38 H26" stroke="#df2432" stroke-width="6" stroke-linecap="round"/>
+                  <rect class="ambulance-siren" x="40" y="11" width="24" height="12" rx="5" fill="#df2432" stroke="#111" stroke-width="4"/>
+                  <path d="M70 27 H92 L101 37 H70 Z" fill="#55c8f4" stroke="#111" stroke-width="4"/>
+                  <circle class="wheel" cx="26" cy="58" r="11" fill="#111"/>
+                  <circle class="wheel" cx="83" cy="58" r="11" fill="#111"/>
+                  <circle cx="26" cy="58" r="4" fill="#fffaf0"/>
+                  <circle cx="83" cy="58" r="4" fill="#fffaf0"/>
+                </g>
+              </g>
+            </g>
+          </g>
+
+          <g id="poof" transform="translate(760 438)" class="inked">
+            <circle cx="-30" cy="8" r="28" fill="#fffaf0" stroke="#111" stroke-width="7"/>
+            <circle cx="0" cy="-10" r="35" fill="#fffaf0" stroke="#111" stroke-width="7"/>
+            <circle cx="37" cy="8" r="28" fill="#fffaf0" stroke="#111" stroke-width="7"/>
+            <circle cx="2" cy="31" r="31" fill="#fffaf0" stroke="#111" stroke-width="7"/>
+            <path d="M-78 -18 C-113 -38 -100 -77 -67 -74 M67 -25 C104 -42 120 -11 96 17 M-46 65 C-69 93 -111 72 -99 41" fill="none" stroke="#111" stroke-width="7" stroke-linecap="round"/>
+          </g>
+
+          <g id="heartMascot" transform="translate(82 415)">
+            <g class="speed" transform="translate(-18 -8)">
+              <path class="speed-line" d="M-142 -62 H-82" stroke="#111" stroke-width="12" stroke-linecap="round"/>
+              <path class="speed-line" d="M-165 -24 H-94" stroke="#df2432" stroke-width="9" stroke-linecap="round"/>
+              <path class="speed-line" d="M-138 18 H-70" stroke="#111" stroke-width="8" stroke-linecap="round"/>
+              <path class="speed-line" d="M-160 62 H-105" stroke="#0f83bc" stroke-width="8" stroke-linecap="round"/>
+            </g>
+
+            <g class="inked" transform="translate(0 48) scale(0.76) translate(0 -48)">
+              <ellipse class="runner-shadow" cx="3" cy="58" rx="86" ry="19" fill="#21150d" opacity=".24"/>
+              <g class="doctor-runner">
+                <g class="cuphead-photo-wrap">
+                  <g class="walk-dust walk-dust-left">
+                    <circle cx="-51" cy="50" r="8" fill="#fff1cf" stroke="#111" stroke-width="3"/>
+                    <circle cx="-37" cy="52" r="5" fill="#fff1cf" stroke="#111" stroke-width="2"/>
+                  </g>
+                  <g class="walk-dust walk-dust-right">
+                    <circle cx="38" cy="50" r="8" fill="#fff1cf" stroke="#111" stroke-width="3"/>
+                    <circle cx="52" cy="52" r="5" fill="#fff1cf" stroke="#111" stroke-width="2"/>
+                  </g>
+                  <g class="cuphead-photo-character">
+                    <g class="cuphead-leg cuphead-leg-back">
+                      <g clip-path="url(#cupheadLegBackClip)">
+                        <use href="#doctorProfileSrc"/>
+                      </g>
+                    </g>
+                    <g class="cuphead-leg cuphead-leg-front">
+                      <g clip-path="url(#cupheadLegFrontClip)">
+                        <use href="#doctorProfileSrc"/>
+                      </g>
+                    </g>
+                    <g class="cuphead-arm-back">
+                      <g clip-path="url(#cupheadArmBackClip)">
+                        <use href="#doctorProfileSrc"/>
+                      </g>
+                      <g class="cuphead-folder" transform="translate(-81 -40) rotate(9) scale(1.75)">
+                        <rect x="-15" y="-7" width="30" height="21" rx="2" fill="#e9b65c" stroke="#161013" stroke-width="2.6"/>
+                        <path d="M-15 -7 L-9 -13 L4 -13 L7 -7 Z" fill="#f1c576" stroke="#161013" stroke-width="2.6" stroke-linejoin="round"/>
+                        <path d="M-10 -5 L-10 9 M-4 -5 L-4 10 M2 -5 L2 9" stroke="#fff6e2" stroke-width="1.6" opacity=".85"/>
+                        <path d="M9 -2 C9 -5 6 -6 4 -5" fill="none" stroke="#161013" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+                      </g>
+                    </g>
+                    <g clip-path="url(#cupheadTorsoClip)">
+                      <use href="#doctorProfileSrc"/>
+                    </g>
+                  </g>
+                </g>
+              </g>
+            </g>
+
+            <path class="motion-star" d="M-120 -92 L-109 -68 L-83 -58 L-109 -48 L-120 -22 L-131 -48 L-157 -58 L-131 -68 Z" fill="#ffd166" stroke="#111" stroke-width="5"/>
+            <path class="motion-star" d="M116 -93 L126 -72 L149 -63 L126 -54 L116 -31 L106 -54 L83 -63 L106 -72 Z" fill="#0f83bc" stroke="#111" stroke-width="5"/>
+            <path class="motion-star" d="M114 86 L123 105 L144 113 L123 121 L114 143 L105 121 L84 113 L105 105 Z" fill="#fff1cf" stroke="#111" stroke-width="5"/>
+          </g>
+        </svg>
+</div>
+</div>

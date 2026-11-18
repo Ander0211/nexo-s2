@@ -1,0 +1,17 @@
+# ESTILO DE ESCRITURA COMPARTIDO
+# Los editores (VS Code con la extensión EditorConfig) aplican estas reglas a todo el que trabaje en el proyecto.
+root = true
+
+[*]
+charset = utf-8              # tildes y ñ se guardan bien
+end_of_line = lf             # saltos de línea estilo Linux (evita cambios falsos en Git)
+insert_final_newline = true  # una línea vacía al final de cada archivo
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4              # Python: 4 espacios
+
+[*.{js,css,html,json,yml,yaml}]
+indent_size = 2              # web: 2 espacios
+
+[*.bat]
+end_of_line = crlf           # los .bat de Windows necesitan CRLF

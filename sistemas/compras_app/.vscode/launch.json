@@ -1,0 +1,46 @@
+{
+  // CONFIGURACIONES DE DEPURACIÓN (el menú «Ejecutar y depurar» / tecla F5).
+  // Depurar = ejecutar el programa pudiendo detenerlo en una línea (punto de parada) para ver qué valen las variables.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // F5: enciende la aplicación con run.py (elige solo un puerto libre y abre el navegador cuando el servidor ya responde).
+      // Es la forma NORMAL de usarla: el servidor no se reinicia solo.
+      "name": "Compras: iniciar",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      // SOLO para programar: «--recargar» reinicia el servidor cada vez que se guarda un archivo .py. Úsala únicamente si estás editando el código:
+      // en una carpeta de OneDrive la sincronización también «guarda» archivos y el servidor se reinicia solo (la página se cae unos segundos).
+      "name": "Compras: iniciar (con recarga automática, solo para programar)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run.py",
+      "args": ["--recargar"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      // Corre TODAS las pruebas con depuración.
+      "name": "Pruebas: todas",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests", "-v"],
+      "justMyCode": false
+    },
+    {
+      // Corre solo las pruebas del archivo que tengas abierto.
+      "name": "Pruebas: archivo actual",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-v"],
+      "justMyCode": false
+    }
+  ]
+}

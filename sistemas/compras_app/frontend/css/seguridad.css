@@ -1,0 +1,171 @@
+/*
+ * SEGURIDAD · ingreso, usuario en la barra, pantalla «Usuarios» y pantalla del proveedor externo
+ * =============================================================================================
+ *   1. Estados de la página (verificando · sin-sesion) y pantalla de ingreso
+ *   2. Quién está usando la aplicación (en la barra azul)
+ *   3. Pantalla «Usuarios» y sus ventanas
+ *   4. Pantalla «Productos que necesitamos» (proveedor externo)
+ */
+
+/* ---------- 1. Estados de la página ---------- */
+/* «verificando»: se está preguntando si hay sesión (no se ve nada). «sin-sesion»: se ve solo el ingreso. */
+body.verificando .barra-sup, body.verificando .menu-lateral, body.verificando .contenido,
+body.sin-sesion .barra-sup, body.sin-sesion .menu-lateral, body.sin-sesion .contenido { display: none !important; }
+.login { display: none; min-height: 100vh; place-items: center; padding: 24px; background: var(--bg); }
+body.sin-sesion .login { display: grid; }
+.login-tarjeta { display: grid; gap: 14px; width: min(400px, 100%); padding: 30px 30px 28px; border: 1px solid var(--line); border-top: 4px solid var(--accent-2); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); text-align: center; }
+.login-logo { justify-self: center; height: auto; }
+.login-sede { margin: 0; color: var(--muted); font-size: 13px; font-weight: 600; }
+.login-tarjeta h1 { margin: 0; color: var(--accent); font-family: var(--font-display); font-size: 42px; font-weight: 600; line-height: 1.1; }
+.login-sub { margin: 0 0 4px; color: var(--muted); font-size: 14px; }
+.login-tarjeta .grupo { text-align: left; }
+.login-tarjeta .btn-grande { width: 100%; height: 48px; font-size: 15px; text-transform: none; letter-spacing: 0; }
+.login-aviso { margin: 0; padding: 10px 14px; border: 1px solid #e9c77d; border-radius: var(--radius-s); background: #fff4dc; color: var(--warn); font-size: 13px; font-weight: 600; }
+
+/* ---------- 2. Quién está usando la aplicación ---------- */
+.usuario-caja { display: flex; align-items: center; gap: 2px; padding-right: 14px; }
+.usuario-quien { display: flex; align-items: center; gap: 8px; padding: 0 12px 0 4px; font-size: 13px; line-height: 1.2; }
+.usuario-quien b { display: block; font-weight: 700; }
+.usuario-quien small { display: block; opacity: .82; font-size: 11.5px; }
+.usuario-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border: 1px solid rgba(255, 255, 255, .4); border-radius: var(--radius-s); background: transparent; color: #fff; font: inherit; font-size: 13px; font-weight: 600; }
+.usuario-btn:hover { background: rgba(255, 255, 255, .16); border-color: #fff; }
+.usuario-btn + .usuario-btn { margin-left: 6px; }
+@media (max-width: 900px) { .usuario-quien small, .usuario-btn .txt { display: none; } }
+@media (max-width: 700px) { .fecha-datos { display: none; } }
+
+/* ---------- 3. Pantalla «Usuarios» ---------- */
+.perfiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 1100px) { .perfiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .perfiles { grid-template-columns: 1fr; } }
+.perfil-tarjeta { display: grid; gap: 4px; align-content: start; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--radius-s); background: var(--panel); font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.perfil-tarjeta b { color: var(--text); font-size: 14px; }
+.perfil-tarjeta.prime { border-left-color: var(--accent-2); }
+.perfil-tarjeta.consulta { border-left-color: var(--silver); }
+.perfil-tarjeta.externo { border-left-color: var(--gold); }
+.etq-perfil { display: inline-block; padding: 2px 9px; border-radius: 2px; background: var(--panel-3); color: var(--accent-dark); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.etq-perfil.admin { background: var(--navy); color: #fff; }
+.etq-perfil.prime { background: #d3e7fb; color: var(--accent-dark); }
+.etq-perfil.consulta { background: #e7ebf3; color: #485066; }
+.etq-perfil.externo { background: #fbecc4; color: #7a5600; }
+.etq-yo { margin-left: 8px; padding: 1px 7px; border-radius: 2px; background: var(--hover); color: var(--accent-dark); font-size: 11px; font-weight: 700; }
+.estado { font-weight: 700; font-size: 12.5px; }
+.estado.ok { color: var(--good); }
+.estado.off { color: var(--bad); }
+.adm-tabla tr.deshecho td { color: var(--faint); }
+.acc-usuario { width: 1%; }
+.casilla-activo { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.casilla-activo input { width: 16px; height: 16px; accent-color: var(--accent); }
+dialog.modal.confirmar-clave { width: min(460px, 96vw); }
+dialog.confirmar-clave form { display: flex; flex-direction: column; min-height: 0; }
+dialog.confirmar-clave .v-cuerpo { display: grid; gap: 12px; }
+.clave-caja { display: grid; gap: 12px; padding: 14px 16px; border: 1px dashed var(--accent); border-radius: var(--radius-s); background: var(--panel); }
+.clave-caja small { display: block; color: var(--muted); font-size: 12px; }
+.clave-caja strong { display: block; margin-top: 2px; font-size: 18px; }
+.clave-valor { font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 24px !important; letter-spacing: .08em; user-select: all; }
+
+/* ---------- 4. Pantalla «Productos que necesitamos» (proveedor externo) ---------- */
+.prov-tabla td.p-cod { width: 140px; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent-dark); }
+.prov-tabla td.p-desc { white-space: normal; max-width: none; }
+.prov-tabla td.p-cant { font-weight: 700; font-size: 15px; }
+
+/* Contacto (correo y celular) en la tabla de usuarios y resultado de los envíos en la ventana de la clave temporal. */
+.contacto span { display: block; font-size: 12.5px; color: var(--muted, #5f6b7a); word-break: break-all; }
+.af-campos .ayuda-envio { grid-column: 1 / -1; margin: 0; }
+.ct-envio { margin: 12px 0 4px; }
+.envios { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+.envio { padding: 8px 12px; border-radius: var(--radius-s, 6px); border-left: 4px solid #aab4c0; background: #f1f3f6; font-size: 13.5px; }
+.envio.enviado { border-left-color: var(--good, #1d8a4e); background: #e6f4ec; }
+.envio.error { border-left-color: var(--bad, #c0392b); background: #fbe6e6; }
+
+/* Asterisco rojo de los campos obligatorios. */
+.etiqueta-campo .req { color: var(--rojo, #ea0b0b); font-weight: 700; }
+
+/* EL OJO DE LAS CLAVES (util.js → activarVerClave): un botón al final del campo que deja ver o volver a ocultar la clave. */
+.ver-clave { flex: none; display: grid; place-items: center; width: 32px; height: 32px; margin-right: -6px; border: 0; border-radius: var(--radius-s); background: transparent; color: var(--muted); cursor: pointer; transition: color .12s, background .12s; }
+.ver-clave:hover { color: var(--accent); background: var(--hover); }
+.ver-clave:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ver-clave[aria-pressed="true"] { color: var(--accent); }
+/* En el celular (o con pantalla táctil) el ojo se hace de 44 px, el tamaño mínimo cómodo para tocar; el campo no crece por eso. */
+@media (pointer: coarse), (max-width: 560px) { .ver-clave { width: 44px; height: 44px; margin: -2px -10px -2px 0; } }
+
+/* ---------- Nexo S²: volver al portal ---------- */
+/* En el inicio de sesión, justo debajo de «Ingresar»: mismo ancho, borde del color de Nexo S² (verde) para distinguirlo. */
+.login-tarjeta .nexo-volver { width: 100%; height: 46px; gap: 10px; border: 2px solid #10a77c; color: #fff; background: #10a77c; font-size: 15px; font-weight: 700; text-decoration: none; }
+.login-tarjeta .nexo-volver:hover { background: #0b8c67; border-color: #0b8c67; color: #fff; }
+.login-tarjeta .nexo-volver img { background: #fff; border-radius: 50%; padding: 1px; }
+/* En la barra azul (ya con la sesión iniciada): al lado del usuario, verde como en SENTINEL. */
+.nexo-barra { align-self: center; display: inline-flex; align-items: center; gap: 8px; margin: 0 12px 0 0; padding: 6px 15px 6px 7px;
+  border: 2px solid #fff; border-radius: 999px; background: #10a77c; color: #fff; font-weight: 700; font-size: 13.5px; text-decoration: none; white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+.nexo-barra:hover { background: #0b8c67; color: #fff; }
+.nexo-barra:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.nexo-barra img { background: #fff; border-radius: 50%; padding: 1px; }
+@media (max-width: 900px) { .nexo-barra span { display: none; } .nexo-barra { padding: 5px; } }
+
+/* Botón Desactivar / Activar en la lista de usuarios (como en SENTINEL) */
+.c-acc .btn-activo { display: inline-flex; align-items: center; height: 30px; margin-left: 4px; padding: 0 8px; vertical-align: middle;
+  border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.c-acc .btn-activo.desactivar { color: #a15c00; border-color: #e6c48a; }
+.c-acc .btn-activo.desactivar:hover { background: #fff4e0; border-color: #a15c00; }
+.c-acc .btn-activo.activar { color: #fff; border-color: var(--good); background: var(--good); }
+.c-acc .btn-activo.activar:hover { filter: brightness(1.08); }
+.acc-usuario .btn-icono { width: 28px; height: 28px; margin-left: 3px; }
+.acc-usuario .btn-activo { height: 28px; margin-left: 3px; }
+
+/* ---------- Pantalla «Adicionales»: código y descripción → Proveedor 1, 2 y 3 con su menor valor al lado ---------- */
+.adi-barra-botones { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin: -4px 0 16px; padding: 10px 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.adi-grupo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#adi-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.adi-ver-inh { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.adi-ver-inh .n { padding: 1px 8px; border-radius: 999px; background: #fde8e8; color: var(--bad); font-weight: 700; }
+/* encabezado en dos filas: «Proveedor 1» arriba y, debajo, «Proveedor | Menor valor» */
+.adi-tabla thead th { vertical-align: middle; }
+.adi-tabla .adi-cab1 .adi-grupo-th { text-align: center; border-bottom: 1px solid var(--line); }
+.adi-tabla .adi-cab2 th { font-size: 11.5px; padding-top: 4px; padding-bottom: 6px; }
+.adi-tabla th.p1, .adi-tabla .adi-grupo-th.p1 { color: var(--good); }
+.adi-tabla .adi-cab2 th.num, .adi-tabla td.adi-val { text-align: right; }
+.adi-tabla td { vertical-align: top; }
+.adi-tabla td.adi-prov.p2, .adi-tabla td.adi-prov.p3, .adi-tabla .adi-cab2 th.p2:not(.num), .adi-tabla .adi-cab2 th.p3:not(.num) { border-left: 1px solid var(--line); }
+.adi-cod { white-space: nowrap; font-weight: 700; }
+.adi-descr { min-width: 150px; }
+.adi-nota { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+.adi-prov { min-width: 100px; }
+.adi-prov .adi-nombre { font-weight: 600; line-height: 1.25; }
+.adi-prov .adi-pres { font-size: 11.5px; color: var(--muted); }
+.adi-val { white-space: nowrap; font-weight: 700; color: var(--navy); }
+.adi-prov.p1, .adi-val.p1 { background: color-mix(in srgb, var(--good) 8%, transparent); }
+.adi-val.p1 { color: var(--good); }
+.adi-nada { color: var(--muted); font-weight: 400; }
+.adi-sin { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #fde8e8; color: var(--bad); font-size: 12px; font-weight: 700; }
+.adi-vacia { text-align: center; color: var(--muted); padding: 28px 10px !important; }
+/* inhabilitado: toda la fila en rojo (no se borra) */
+.adi-tabla tr.adi-inhabilitado td { background: #fdecec !important; color: #a12a2a; }
+.adi-tabla tr.adi-inhabilitado .adi-val, .adi-tabla tr.adi-inhabilitado .adi-nombre { color: #a12a2a; text-decoration: line-through; text-decoration-thickness: 1px; }
+.adi-estado-inh { display: table; margin-top: 4px; padding: 1px 8px; border-radius: 999px; background: var(--bad); color: #fff; font-size: 11px; font-weight: 700; }
+.btn-estado { height: 30px; padding: 0 10px; border-radius: var(--radius-s); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-estado.inhabilitar { border: 1px solid #e3a0a0; background: var(--panel); color: var(--bad); }
+.btn-estado.inhabilitar:hover { background: #fdecec; border-color: var(--bad); }
+.btn-estado.habilitar { border: 1px solid var(--good); background: var(--good); color: #fff; }
+/* ventana emergente «Agregar» */
+dialog.adi-modal { width: min(620px, 96vw); }
+.adi-modal-form { display: contents; }
+.adi-pestanas { display: flex; gap: 6px; flex-wrap: wrap; }
+.adi-pestanas .chip[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.adi-campos { display: grid; grid-template-columns: 160px 1fr; gap: 12px; }
+.adi-modal label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+.adi-modal input, .adi-modal textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); font: inherit; color: var(--text); }
+.adi-modal textarea { font-family: Consolas, "Courier New", monospace; font-size: 13px; resize: vertical; }
+.adi-c-pegar { font-weight: 500 !important; }
+.adi-cuenta { margin: 0; font-size: 12.5px; color: var(--muted); }
+.adi-hechos { border: 1px solid #b7e0cc; background: #eefaf4; border-radius: var(--radius-s); padding: 10px 12px; display: grid; gap: 6px; }
+.adi-hechos-tit { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--good); font-size: 13px; }
+.adi-hecho { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; font-size: 13px; }
+.adi-hecho-p1 { grid-column: 2; color: var(--muted); font-size: 12px; }
+@media (max-width: 700px) {
+  #adi-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adi-campos { grid-template-columns: 1fr; }
+  .adi-barra-botones { justify-content: flex-start; }
+}
+.adi-tabla th, .adi-tabla td { padding-left: 10px; padding-right: 10px; }
+.adi-tabla td.acc { width: 1%; }

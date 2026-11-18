@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#015AAA">
+  <title>SENTINEL PABON · Copias de seguridad · Clinica Cardioneurovascular PABON</title>
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div id="splash" class="splash" role="dialog" aria-label="SENTINEL PABON">
+    <div class="splash-inner">
+      <img src="assets/logo.png" alt="">
+      <h1>SENTINEL <em>PABON</em></h1>
+      <p>Copias de seguridad</p>
+    </div>
+  </div>
+  <div class="app">
+    <aside class="side" id="side"></aside>
+    <div class="main">
+      <header class="top">
+        <button class="menu-btn" id="menuBtn" type="button" aria-label="Abrir el menú" aria-controls="side" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <div class="crumb" id="crumb"></div>
+        <a class="nexo-volver nexo-movil" data-nexo-volver href="http://localhost:7000/" title="Volver a Nexo S²" aria-label="Volver a Nexo S²">
+          <img src="assets/nexo-icono.png" alt="" width="22" height="22"><span>Nexo S²</span></a>
+        <button class="mas-btn" id="masBtn" type="button" aria-label="Más opciones: buscar, usuario, salir" aria-controls="topActions" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg></button>
+        <div class="top-actions" id="topActions">
+          <a class="nexo-volver" data-nexo-volver href="http://localhost:7000/" title="Volver al inicio de Nexo S²">
+            <img src="assets/nexo-icono.png" alt="" width="22" height="22">Volver a Nexo S²</a>
+          <span class="quien" id="quien" title="Usuario conectado"><b id="quienNombre"></b><small id="quienRol"></small></span>
+          <a class="icon-btn" id="btnCuentas" href="usuarios.html">Usuarios</a>
+          <button class="icon-btn" id="btnSalir" type="button" title="Cerrar sesión">Salir</button>
+          <input id="qglob" class="qglob" placeholder="Buscar: sistema, archivo o fecha (ej. 27/10/2026)" autocomplete="off" aria-label="Buscar en el inventario">
+          <button class="icon-btn" id="helpBtn" title="Cómo usar">Ayuda</button>
+          <button class="icon-btn" id="printBtn" title="Imprimir">Imprimir</button>
+          <button class="icon-btn" id="themeBtn" title="Claro / oscuro">Tema</button>
+        </div>
+      </header>
+      <section class="view" id="view"></section>
+    </div>
+  </div>
+  <div class="velo" id="velo" aria-hidden="true"></div>
+  <div class="toast" id="toast"></div>
+  <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+  <script src="js/nexo.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/analytics.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/movil.js"></script>
+</body>
+</html>

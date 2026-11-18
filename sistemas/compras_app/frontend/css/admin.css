@@ -1,0 +1,169 @@
+/*
+ * ADMINISTRACIÓN · pantalla de las 5 tablas de los Excel y sus ventanas (js/admin.js)
+ * ===================================================================================
+ * Usa los mismos colores y medidas del resto de la aplicación (variables de base.css).
+ *   1. Pantalla: cabecera, pestañas, barra de herramientas, selección, tabla, paginación
+ *   2. Ventanas: agregar fila, confirmar, importar Excel, historial
+ *   3. Botones del panel de avisos (los «Ir a corregir»)
+ */
+
+/* ---------- 1. Pantalla ---------- */
+.acciones-cab { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Botón rojo para lo que elimina o reemplaza (como .btn-primario, pero de alerta). */
+.btn-peligro { color: #fff; border-color: var(--bad); background: var(--bad); }
+.btn-peligro:hover { border-color: #a82323; background: #a82323; }
+.btn-peligro[disabled] { opacity: .45; }
+
+.adm-panel { padding: 0; overflow: hidden; }
+.pestanas-adm { padding: 14px 16px 0; overflow-x: auto; }
+.pestanas-adm .pestanas { display: inline-flex; flex-wrap: nowrap; }
+.pestanas-adm .pestana { white-space: nowrap; }
+
+/* Barra de herramientas: el buscador a la izquierda; agregar, eliminar y descargar a la derecha. */
+.adm-barra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; }
+.adm-barra .buscador { flex: 1 1 260px; max-width: 420px; }
+.adm-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-botones .btn svg { flex: none; }
+
+/* Franja de filas seleccionadas («3 filas seleccionadas · Seleccionar las 2.449 filas del filtro · Quitar la selección»). */
+.adm-seleccion { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 9px 16px; border-top: 1px solid var(--line); background: #fbf1dc; font-size: 13px; }
+.adm-seleccion button { border: 0; background: transparent; color: var(--accent); font-weight: 700; text-decoration: underline; }
+
+/* La tabla. Los encabezados se ven EXACTAMENTE como en el Excel (sin pasar a mayúsculas: «StockMax», «COD_PRODUCTO»). */
+.adm-tabla-caja { overflow-x: auto; border-top: 1px solid var(--line); }
+.adm-tabla { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.adm-tabla th, .adm-tabla td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.adm-tabla thead th { background: var(--panel-2); color: var(--accent-dark); font-weight: 700; white-space: nowrap; }
+.adm-tabla th.der, .adm-tabla td.der { text-align: right; font-variant-numeric: tabular-nums; }
+.adm-tabla td { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-tabla tbody tr:hover { background: #f0f7fd; }
+.adm-tabla tr.sel { background: var(--hover); }
+.orden-col { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; }
+.orden-col:hover { color: var(--accent); }
+.orden-col .flecha { font-size: 10px; color: var(--accent); }
+.c-sel { width: 38px; text-align: center !important; }
+.c-num { width: 64px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.c-acc { width: 92px; text-align: right !important; white-space: nowrap; }
+.c-acc .btn-icono { display: inline-grid; width: 30px; height: 30px; margin-left: 4px; vertical-align: middle; }
+.c-acc .btn-icono.peligro:hover { color: var(--bad); border-color: var(--bad); }
+.c-acc .btn-icono.ok { color: #fff; border-color: var(--good); background: var(--good); }
+.adm-tabla input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+
+/* Celdas vacías: un guion tenue; si el vacío es el problema (obligatoria o fila de un aviso), fondo amarillo suave. */
+.adm-tabla td.vacia { color: var(--faint); }
+.adm-tabla td.falta { background: #fff4dc; color: var(--warn); font-weight: 700; }
+.vacio-tabla { padding: 34px 16px !important; color: var(--muted); text-align: center !important; white-space: normal !important; }
+
+/* Fila en edición: una caja de texto por columna. */
+.adm-tabla tr.editando { background: #eef6fd; }
+.adm-tabla tr.editando td { max-width: none; overflow: visible; }
+.adm-tabla input[type="text"] { width: 100%; min-width: 96px; height: 32px; padding: 0 8px; border: 1px solid var(--accent); border-radius: var(--radius-s); outline: 0; background: var(--panel); font: inherit; }
+.adm-tabla input[type="text"]:focus { box-shadow: 0 0 0 3px rgba(1, 90, 170, .2); }
+.adm-tabla input.der { text-align: right; }
+
+/* La fila recién agregada parpadea en verde un momento, para verla entre miles. */
+.adm-tabla tr.nueva { animation: fila-nueva 2.2s ease-out; }
+@keyframes fila-nueva { from { background: #cfeedd; } to { background: transparent; } }
+
+.adm-panel .paginacion { border-top: 1px solid var(--line); }
+
+/* ---------- 2. Ventanas ---------- */
+/* Agregar fila: los campos van en dos columnas (en una, en pantallas angostas). */
+.af-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+@media (max-width: 560px) { .af-campos { grid-template-columns: 1fr; } }
+.req { color: var(--bad); font-weight: 700; }
+
+/* Confirmar: ventana angosta con cabecera roja (es una pregunta antes de algo que borra). */
+dialog.modal.confirmar { width: min(480px, 96vw); }
+dialog.confirmar .v-cab { background: var(--bad); }
+dialog.confirmar .v-cuerpo { gap: 10px; }
+dialog.confirmar .v-cuerpo p { margin: 0; font-size: 14px; line-height: 1.5; }
+
+/* Importar Excel */
+.intro { margin: 0; color: var(--muted); font-size: 13.5px; }
+.opciones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 620px) { .opciones { grid-template-columns: 1fr; } }
+.opcion { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); cursor: pointer; }
+.opcion:has(input:checked) { border-color: var(--accent); background: var(--hover); box-shadow: 0 0 0 1px var(--accent) inset; }
+.opcion input { margin-top: 3px; accent-color: var(--accent); }
+.opcion b, .opcion small { display: block; }
+.opcion small { margin-top: 2px; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.imp-bloque { display: grid; gap: 10px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--panel); }
+.imp-bloque h3 { margin: 0; color: var(--accent-dark); font-size: 14px; }
+.imp-bloque > .btn { justify-self: start; }
+.imp-tablas { display: grid; gap: 4px; }
+.imp-fila { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 8px 10px; border-radius: var(--radius-s); cursor: pointer; }
+.imp-fila:hover { background: var(--panel-2); }
+.imp-fila input { accent-color: var(--accent); }
+.imp-nombre b, .imp-nombre small { display: block; }
+.imp-nombre small, .imp-filas { color: var(--muted); font-size: 12.5px; }
+.imp-filas { font-variant-numeric: tabular-nums; }
+.imp-subir { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.imp-subir select { height: 34px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); }
+.imp-subir input[type="file"] { flex: 1 1 200px; min-width: 0; font-size: 13px; }
+.imp-resultado:empty { display: none; }
+.imp-resultado { padding: 14px 16px; border: 1px solid var(--good); border-radius: var(--radius-s); background: #e9f6ef; }
+.imp-resultado h3 { margin: 0 0 6px; color: var(--good); font-size: 14px; }
+.imp-resultado ul { margin: 0 0 6px; padding-left: 18px; font-size: 13.5px; }
+
+/* Historial */
+.hist-filtro { display: flex; justify-content: flex-end; color: var(--muted); font-size: 13px; }
+.hist-filtro select { height: 32px; margin-left: 6px; padding: 0 8px; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); }
+.hist-tabla { width: 100%; border-collapse: collapse; background: var(--panel); font-size: 13px; }
+.hist-tabla th, .hist-tabla td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.hist-tabla th { background: var(--panel-2); color: var(--muted); font-weight: 700; }
+.hist-tabla .h-fecha { width: 96px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hist-tabla .h-acc { width: 130px; text-align: right; }
+.hist-tabla .h-texto { overflow-wrap: anywhere; }
+.hist-tabla tr.deshecho td { color: var(--faint); }
+.hist-tabla tr.deshecho .h-texto { text-decoration: line-through; }
+.hist-tabla .btn { height: 30px; padding: 0 10px; font-size: 13px; }
+.etq-tabla { display: inline-block; padding: 1px 8px; border-radius: 2px; background: var(--panel-3); color: var(--accent-dark); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.vacio-hist { padding: 30px 10px; color: var(--muted); text-align: center; }
+
+/* ---------- 3. Botones «Ir a corregir» del panel de avisos ---------- */
+.aviso .ir { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.btn-ir { height: 30px; padding: 0 11px; font-size: 13px; }
+.btn-ir.principal { color: #fff; border-color: var(--accent-2); background: var(--accent-2); }
+.btn-ir.principal:hover { border-color: var(--accent); background: var(--accent); }
+.btn-ir .n { padding: 0 6px; border-radius: 2px; background: rgba(0, 0, 0, .12); font-size: 12px; font-variant-numeric: tabular-nums; }
+.btn-ir.principal .n { background: rgba(255, 255, 255, .25); }
+
+/* «Actualizar Excel» → subir varios archivos de una vez: una fila por archivo, con la tabla a la que va */
+.imp-lote { display: grid; gap: 6px; }
+.imp-lote-fila { display: grid; grid-template-columns: minmax(0, 1fr) 200px 34px; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--panel); }
+.imp-lote-fila.sin-tabla { border-color: var(--warn); background: #fff8ec; }
+.imp-lote-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.imp-lote-nombre small { display: block; color: var(--muted); font-weight: 400; }
+.imp-resumen { margin: 0; color: var(--muted); font-size: 12.5px; min-height: 1em; }
+.imp-errores h3 { color: var(--bad); }
+.imp-errores li { color: var(--bad); }
+@media (max-width: 560px) { .imp-lote-fila { grid-template-columns: minmax(0, 1fr) 34px; } .imp-lote-fila select { grid-column: 1 / -1; order: 3; } }
+
+/* «Lo que necesita el sistema»: la lista de Excel (obligatorios y opcionales) con su estado */
+.checklist { display: grid; gap: 6px; text-align: left; }
+.checklist-resumen { margin: 0 0 2px; font-weight: 700; }
+.checklist-resumen.falta { color: var(--bad); }
+.checklist-resumen.listo { color: var(--good); }
+.checklist-fila { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 8px 10px; border: 1px solid var(--line); border-left-width: 4px; border-radius: var(--radius-s); background: var(--panel); }
+.checklist-fila.ok { border-left-color: var(--good); }
+.checklist-fila.ok svg { color: var(--good); }
+.checklist-fila.falta { border-left-color: var(--bad); }
+.checklist-fila.falta svg { color: var(--bad); }
+.checklist-fila.opcional { border-left-color: var(--line-2); }
+.checklist-fila.opcional svg { color: var(--muted); }
+.checklist-texto { display: grid; gap: 2px; min-width: 0; }
+.checklist-texto strong { overflow-wrap: anywhere; }
+.checklist-texto small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.checklist-etiqueta { justify-self: start; padding: 1px 8px; border-radius: 9px; font-size: 10.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; }
+.checklist-etiqueta.obligatorio { background: #fdeaea; color: var(--bad); }
+.checklist-etiqueta.opcional { background: var(--panel-3); color: var(--muted); }
+.checklist-estado { font-weight: 800; white-space: nowrap; }
+.checklist-fila.falta .checklist-estado { color: var(--bad); }
+.checklist-fila.ok .checklist-estado { color: var(--good); }
+.vacio-pide { max-width: 760px; margin: 0 auto; display: grid; gap: 10px; justify-items: center; }
+.vacio-pide .checklist { width: 100%; }
+.inicio-pide { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; margin: 14px auto 0; padding: 10px 14px; max-width: 560px; border: 1px solid var(--warn); border-radius: var(--radius); background: #fff8ec; font-weight: 700; }
+.inicio-pide[hidden] { display: none; }
+@media (max-width: 560px) { .checklist-fila { grid-template-columns: 22px minmax(0, 1fr); } .checklist-estado { grid-column: 2; } }

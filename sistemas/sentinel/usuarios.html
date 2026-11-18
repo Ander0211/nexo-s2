@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Usuarios · SENTINEL PABON</title>
+  <link rel="icon" href="assets/logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/acceso.css">
+</head>
+<body>
+  <main class="cuentas">
+    <div class="cuentas-top">
+      <h1 id="titulo">Usuarios</h1>
+      <a class="btn" href="/">Volver a SENTINEL</a>
+      <a class="nexo-volver" data-nexo-volver href="http://localhost:7000/"><img src="assets/nexo-icono.png" alt="" width="22" height="22">Volver a Nexo S²</a>
+    </div>
+
+    <section class="panel" id="pAdmin" hidden>
+      <h2>Qué puede hacer cada rol</h2>
+      <div class="roles">
+        <div><span class="chip admin">Administrador</span><p>Todo: cargar el inventario, configurar la fuente y las copias de red, verificar el día (ENVIAR) y gestionar usuarios.</p></div>
+        <div><span class="chip rev">Revisor</span><p>Solo consulta: tableros, inventario, análisis y registro de verificaciones. No carga inventario ni verifica copias.</p></div>
+      </div>
+    </section>
+
+    <section class="panel" id="pCrear" hidden>
+      <h2>Crear usuario</h2>
+      <p>La clave se crea <b>automáticamente</b> y se envía con el usuario por <b>correo</b> y por <b>WhatsApp</b>. Con ella la persona entra de una vez (después puede cambiarla en «Mi clave», si quiere).</p>
+      <p class="msg" id="mCrear" hidden></p>
+      <form id="fCrear" class="fila">
+        <label>Nombre<input id="cNombre" required autocomplete="off"></label>
+        <label>Usuario<input id="cUsuario" required autocapitalize="none" spellcheck="false" placeholder="ej. jperez" autocomplete="off"></label>
+        <label>Rol<select id="cRol"><option value="revisor">Revisor</option><option value="administrador">Administrador</option></select></label>
+        <label>Correo *<input id="cCorreo" type="email" required placeholder="nombre@dominio.com" autocomplete="off"></label>
+        <label>Celular / WhatsApp *<input id="cCelular" type="tel" required placeholder="300 123 4567" autocomplete="off"></label>
+        <button class="btn primario" type="submit" id="bCrear">Crear y enviar</button>
+      </form>
+      <p class="nota-envio" id="pistaEnvio"></p>
+    </section>
+
+    <section class="panel" id="pLista" hidden>
+      <h2>Usuarios registrados</h2>
+      <p class="msg" id="mLista" hidden></p>
+      <div class="tabla"><table>
+        <thead><tr><th>Nombre</th><th>Usuario</th><th>Contacto</th><th>Rol</th><th>Estado</th><th>Último ingreso</th><th>Acciones</th></tr></thead>
+        <tbody id="tUsuarios"></tbody>
+      </table></div>
+    </section>
+
+    <!-- Clave temporal: se muestra una sola vez, con lo que pasó en el correo y en WhatsApp -->
+    <dialog id="dTemporal" class="dialogo">
+      <h2 id="dtTitulo">Usuario creado</h2>
+      <p>Esta es la clave con la que la persona entra. Se muestra <b>solo esta vez</b>: cópiela si necesita dársela a mano.</p>
+      <div class="credencial">
+        <div><small>Usuario</small><b id="dtUsuario"></b></div>
+        <div><small>Clave</small><b id="dtClave" class="clave-mono"></b></div>
+        <button class="btn" type="button" id="dtCopiar">Copiar clave</button>
+      </div>
+      <h3>Envío</h3>
+      <div id="dtEnvio"></div>
+      <div class="dialogo-pie"><button class="btn primario" type="button" id="dtCerrar">Listo</button></div>
+    </dialog>
+
+    <!-- Editar nombre y contacto -->
+    <dialog id="dDatos" class="dialogo">
+      <h2>Datos de <span id="ddUsuario"></span></h2>
+      <p class="msg" id="mDatos" hidden></p>
+      <form id="fDatos" class="pila">
+        <label>Nombre<input id="dNombre" required></label>
+        <label>Correo *<input id="dCorreo" type="email" required></label>
+        <label>Celular / WhatsApp *<input id="dCelular" type="tel" required></label>
+        <div class="dialogo-pie">
+          <button class="btn" type="button" id="ddCancelar">Cancelar</button>
+          <button class="btn primario" type="submit">Guardar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <section class="panel">
+      <h2>Mi clave</h2>
+      <p id="yo"></p>
+      <p class="msg" id="mClave" hidden></p>
+      <form id="fClave" class="fila">
+        <label>Clave actual<input id="kActual" type="password" required autocomplete="current-password"></label>
+        <label>Clave nueva (mín. 8)<input id="kNueva" type="password" required minlength="8" autocomplete="new-password"></label>
+        <label>Repita la nueva<input id="kNueva2" type="password" required minlength="8" autocomplete="new-password"></label>
+        <button class="btn primario" type="submit">Cambiar mi clave</button>
+      </form>
+    </section>
+  </main>
+  <script src="js/nexo.js"></script>
+  <script src="js/ojo.js"></script>
+  <script src="js/usuarios.js"></script>
+</body>
+</html>

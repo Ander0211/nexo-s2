@@ -1,0 +1,32 @@
+# PRUEBAS AUTOMÁTICAS EN GITHUB
+# =============================
+# Cada vez que subes cambios (push a main) o abres un Pull Request, GitHub enciende un
+# computador virtual, instala el proyecto y corre las pruebas. Si algo falla, lo marca
+# con una ✗ roja en el commit o en el Pull Request, antes de que el error llegue a main.
+name: Pruebas
+
+# ¿Cuándo se ejecuta?
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    # Se prueba con dos versiones de Python para asegurar que funciona en ambas.
+    strategy:
+      matrix:
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4 # descarga el código del repositorio
+      - uses: actions/setup-python@v5 # instala Python
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip # guarda las librerías descargadas para que la próxima vez sea más rápido
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Revisar código
+        run: ruff check . # revisa errores y estilo (configuración en pyproject.toml)
+      - name: "Pruebas (los Excel reales no están en GitHub, así que esas pruebas se omiten solas)"
+        run: pytest -v

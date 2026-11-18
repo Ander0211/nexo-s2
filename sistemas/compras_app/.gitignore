@@ -1,0 +1,31 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# --- Base de datos local (se regenera desde los Excel al iniciar) ---
+data/compras.db
+data/compras.db-*
+
+# --- DATOS DE LA EMPRESA: no subir a GitHub ---
+# Los Excel tienen productos, existencias y precios de proveedores.
+# Si el repositorio es privado y quieres versionarlos, borra estas dos líneas.
+data/excel/*.xlsx
+data/excel/*.xls
+
+# --- Sistema / editor ---
+.DS_Store
+Thumbs.db
+~$*
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+
+# --- Configuración con claves (correo, WhatsApp): NUNCA subir a GitHub ---
+.env

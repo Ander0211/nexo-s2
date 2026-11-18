@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <!--
+    LA ÚNICA PÁGINA DE LA APLICACIÓN (index.html)
+    ===============================================
+    Todo está en esta página: la barra de arriba, el MENÚ LATERAL, las dos «pantallas» (bienvenida y tablero de compras) y,
+    al final, las ventanas emergentes que se abren encima (no son ventanas aparte, así el navegador no las puede bloquear):
+        «Agregar oferta»  →  <dialog id="dlg-agregar">   (lógica en js/agregar.js)
+        «Cargar datos»    →  <dialog id="dlg-cargar">    (lógica en js/cargar.js)
+        «Mejor oferta» / «Otras ofertas» de cada fila  →  <dialog id="dlg-ofertas">  (lo dibuja js/podio.js)
+    Esta página es solo el «esqueleto»: define los espacios. Todo el contenido lo dibujan los archivos de js/
+    pidiéndole los datos a la API; los estilos están en css/.
+    Se sirve en http://127.0.0.1:8000/  (ver app/main.py).
+  -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SUMIPABON · Compras</title>
+  <!-- Icono de la pestaña: el corazón con latido de la Clínica Pabón (frontend/img). -->
+  <link rel="icon" type="image/png" href="/static/img/icono-192.png">
+  <link rel="apple-touch-icon" href="/static/img/icono-192.png">
+  <!-- Estilos: base.css = colores, menú, barra de arriba, bienvenida · componentes.css = lista y podio ·
+       agregar.css = ventanas emergentes y formulario de «Agregar oferta» · cargar.css = ventana «Cargar datos» ·
+       admin.css = pantalla «Administración» y sus ventanas. -->
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/componentes.css">
+  <link rel="stylesheet" href="/static/css/agregar.css">
+  <link rel="stylesheet" href="/static/css/cargar.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+  <link rel="stylesheet" href="/static/css/seguridad.css">
+  <link rel="stylesheet" href="/static/css/control.css">
+  <link rel="stylesheet" href="/static/css/extras.css">
+</head>
+<!-- «verificando»: mientras app.js le pregunta al servidor si hay una sesión iniciada no se ve nada (así no parpadea el ingreso).
+     Después pasa a «sin-sesion» (se ve solo la pantalla de ingreso) o se quita (se ve la aplicación según el perfil). -->
+<body class="verificando">
+  <!-- PANTALLA DE INGRESO (js/app.js → mostrarLogin): lo único que se ve sin sesión. -->
+  <section class="login" aria-labelledby="login-titulo">
+    <form class="login-tarjeta" id="login-form" autocomplete="on">
+      <img class="login-logo" src="/static/img/corazon.png" alt="Clínica Cardioneurovascular Pabón" width="110" height="78">
+      <p class="login-sede">Clínica Cardioneurovascular Pabón</p>
+      <h1 id="login-titulo">SUMIPABON</h1>
+      <p class="login-sub">Ingresa con tu usuario y clave.</p>
+      <p class="login-aviso" id="login-aviso" role="status" hidden></p>
+      <label class="grupo"><span class="etiqueta-campo">Usuario</span>
+        <span class="campo"><input id="login-usuario" name="usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></span></label>
+      <label class="grupo"><span class="etiqueta-campo">Clave</span>
+        <span class="campo"><input id="login-clave" name="clave" type="password" autocomplete="current-password" required></span></label>
+      <p class="error" id="login-error" role="alert" hidden></p>
+      <button class="btn btn-primario btn-grande" id="login-entrar" type="submit">Ingresar</button>
+      <a class="btn nexo-volver" data-nexo-volver href="http://localhost:7000/">
+        <img src="/static/img/nexo-icono.png" alt="" width="22" height="22">Volver a Nexo S²</a>
+    </form>
+  </section>
+
+  <!-- BARRA SUPERIOR (azul): la marca (lleva a la bienvenida), el botón ☰ que muestra u oculta el menú, la ruta «Inicio › …»
+       y la fecha de los datos. Los iconos (data-icono) los dibuja util.js. -->
+  <header class="barra-sup">
+    <a class="marca" href="#inicio" title="Ir a la pantalla de bienvenida">
+      <img class="marca-logo" src="/static/img/logo-blanco.png" alt="Clínica Pabón" width="78" height="37">
+      <strong>SUMIPABON</strong>
+    </a>
+    <button class="alternar" id="btn-menu" type="button" aria-label="Mostrar u ocultar el menú" aria-controls="menu" aria-expanded="true"><span data-icono="menu" data-tam="20"></span></button>
+    <nav class="ruta" aria-label="Dónde estás"><a href="#inicio">Inicio</a><span class="ruta-actual" id="ruta-actual"></span></nav>
+    <span class="fecha-datos" id="actualizado">Compras · mejor proveedor</span>
+    <!-- Quién está usando la aplicación, con sus botones «Clave» y «Salir» (los llena app.js → aplicarPerfil). -->
+    <a class="nexo-barra" data-nexo-volver href="http://localhost:7000/" title="Volver al inicio de Nexo S²">
+      <img src="/static/img/nexo-icono.png" alt="" width="22" height="22"><span>Volver a Nexo S²</span></a>
+    <div class="usuario-caja" id="usuario-caja">
+      <span class="usuario-quien"><span data-icono="usuario" data-tam="16"></span><span><b id="usuario-nombre"></b><small id="usuario-rol"></small></span></span>
+      <button class="usuario-btn" id="btn-clave" type="button" title="Cambiar mi clave" aria-label="Cambiar mi clave"><span data-icono="llave" data-tam="16"></span></button>
+      <button class="usuario-btn" id="btn-salir" type="button" title="Cerrar sesión" aria-label="Cerrar sesión"><span data-icono="salir" data-tam="16"></span><span class="txt">Salir</span></button>
+    </div>
+  </header>
+
+  <!-- MENÚ LATERAL (izquierda). «Tablero de compras» y «Administración» cambian de pantalla; las demás opciones hacen lo mismo que hacían los
+       botones de la barra: Agregar oferta y Cargar datos abren su ventana · Actualizar Excel abre la ventana para importar
+       los Excel (por tabla, reemplazando o agregando) · Descargar OC y Alternativas bajan los Excel · Avisos de datos abre el panel de
+       avisos (con el número de avisos importantes y botones «Ir a corregir»). -->
+  <aside class="menu-lateral" id="menu" aria-label="Menú principal">
+    <div class="menu-titulo">Menú</div>
+    <nav class="menu-lista">
+      <a class="menu-item" id="menu-tablero" data-roles="admin prime consulta" href="#tablero" data-pantalla="tablero"><span data-icono="cesta" data-tam="18"></span><span class="txt">Tablero de compras</span></a>
+      <a class="menu-item" id="menu-control" data-roles="admin prime consulta" href="#control" data-pantalla="control" title="Empresas con menores valores, precios más baratos y productos que más consumen"><span data-icono="grafico" data-tam="18"></span><span class="txt">Tableros de control</span></a>
+      <a class="menu-item" id="menu-adicionales" data-roles="admin prime consulta" href="#adicionales" data-pantalla="adicionales" title="Sube código y descripción de productos y ve el Proveedor 1, 2 y 3 con su menor valor"><span data-icono="comparar" data-tam="18"></span><span class="txt">Adicionales</span></a>
+      <a class="menu-item" id="menu-admin" data-roles="admin" href="#admin" data-pantalla="admin" title="Ver, editar, agregar y eliminar las tablas de tus Excel"><span data-icono="tabla" data-tam="18"></span><span class="txt">Administración</span></a>
+      <a class="menu-item" id="menu-usuarios" data-roles="admin" href="#usuarios" data-pantalla="usuarios" title="Crear usuarios y darles un perfil"><span data-icono="usuarios" data-tam="18"></span><span class="txt">Usuarios</span></a>
+      <a class="menu-item" id="menu-proveedor" data-roles="externo admin" href="#proveedor" data-pantalla="proveedor" title="Los productos que la Clínica necesita comprar"><span data-icono="cesta" data-tam="18"></span><span class="txt">Productos que necesitamos</span></a>
+      <button class="menu-item" id="btn-agregar" data-roles="admin prime" type="button"><span data-icono="mas" data-tam="18"></span><span class="txt">Agregar oferta</span></button>
+      <button class="menu-item" id="btn-cargar" data-roles="admin prime" type="button" title="Sube un Excel o agrega a mano productos, proveedores y cotizaciones"><span data-icono="subir" data-tam="18"></span><span class="txt">Cargar datos</span></button>
+      <button class="menu-item" id="btn-importar" data-roles="admin prime" type="button" title="Importa los Excel a las tablas: elige cuáles y si reemplazar o agregar"><span data-icono="refrescar" data-tam="18"></span><span class="txt">Actualizar Excel</span></button>
+      <a class="menu-item" id="btn-oc" data-roles="admin prime" href="/api/exportar/oc" download data-descarga="la orden de compra" title="Descarga la orden de compra (formato OC) con el proveedor ganador de cada producto"><span data-icono="descargar" data-tam="18"></span><span class="txt">Descargar OC (ganadores)</span></a>
+      <button class="menu-item" id="btn-alternativas" data-roles="admin prime" type="button" title="Descarga un libro con el 2.º, 3.º y 4.º proveedor de cada producto (las tres hojas de la OC por puesto)"><span data-icono="descargar" data-tam="18"></span><span class="txt">Alternativas 2.º a 4.º</span></button>
+      <button class="menu-item" id="btn-pendientes" data-roles="admin" type="button" title="Fichas con precios que enviaron los proveedores, por revisar y aprobar"><span data-icono="lista" data-tam="18"></span><span class="txt">Ofertas de proveedores</span><span class="badge" id="badge-pendientes" hidden>0</span></button>
+      <button class="menu-item" id="btn-avisos" data-roles="admin prime" type="button" title="Avisos sobre los datos"><span data-icono="alerta" data-tam="18"></span><span class="txt">Avisos de datos</span><span class="badge" id="badge-avisos" hidden>0</span></button>
+    </nav>
+  </aside>
+
+  <div class="contenido">
+    <main>
+      <!-- PANTALLA 1 · BIENVENIDA (la que se ve al ingresar). El botón grande lleva al tablero; las opciones están en el menú de la izquierda. -->
+      <section class="vista vista-inicio" id="vista-inicio" aria-labelledby="inicio-titulo">
+        <div class="bienvenida">
+          <!-- Los dos logos de las esquinas: Clínica Pabón a la izquierda y el Centro de Cuidados a la derecha (en celular quedan en una fila arriba); el título va debajo. -->
+          <div class="bienvenida-logos">
+            <img class="logo-pabon" src="/static/img/logo-pabon.png" alt="Clínica Pabón" width="170" height="80">
+            <img class="logo-centro" src="/static/img/logo-centro.png" alt="Centro de Cuidados Cardioneurovasculares Pabón S.A.S." width="112" height="88">
+          </div>
+          <h1 id="inicio-titulo">SUMIPABON</h1>
+          <p class="bienvenida-lema">Trabajamos con el corazón</p>
+          <p class="bienvenida-texto">Compara las ofertas de tus proveedores, elige el mejor precio de cada producto y prepara la hoja de compra en un solo lugar.</p>
+          <button class="btn btn-primario btn-grande" id="btn-entrar" type="button"><span data-icono="cesta" data-tam="20"></span>Tablero de compras</button>
+          <!-- Aviso «todavía no hay datos» con el botón para subir los Excel (solo se ve con la base vacía): lo llena app.js → cargarResumen. -->
+          <div class="inicio-pide" id="inicio-pide" hidden></div>
+          <!-- Tres datos rápidos: los llena app.js → cargarResumen. -->
+          <ul class="bienvenida-datos" id="inicio-datos" aria-live="polite"></ul>
+        </div>
+      </section>
+
+      <!-- PANTALLA 2 · TABLERO DE COMPRAS (KPIs, lista de productos y gráfico «Dónde comprar»). -->
+      <section class="vista" id="vista-tablero" hidden aria-label="Tablero de compras">
+        <div class="cab-vista">
+          <div><h1>Tablero de compras</h1><p>El mejor proveedor de cada producto, con lo que hay que comprar.</p></div>
+          <!-- «Actualizar todo»: vuelve a leer del servidor TODO el tablero (números de arriba, lista, «Dónde comprar» y avisos). No importa los Excel: eso lo hace «Actualizar Excel». -->
+          <div class="tablero-acciones">
+            <button class="btn btn-fantasma" id="btn-actualizar-todo" type="button" title="Volver a leer todos los datos del servidor"><span data-icono="refrescar" data-tam="16"></span>Actualizar todo</button>
+            <small class="hora-actualizado" id="tablero-hora" aria-live="polite"></small>
+          </div>
+          <!-- Buscador: escribir filtra la lista (con 250 ms de pausa). El atajo «/» lo enfoca. -->
+          <label class="buscador">
+            <span data-icono="buscar" data-tam="18"></span>
+            <input id="q" type="search" placeholder="Buscar por código o descripción…" autocomplete="off" aria-label="Buscar productos">
+            <kbd>/</kbd>
+          </label>
+        </div>
+        <!-- Los 4 números grandes: app.js crea las tarjetas dentro de este espacio. -->
+        <section class="kpis" id="kpis" aria-label="Resumen de compra"></section>
+        <!-- Dos columnas: la lista de productos (izquierda) y el gráfico «Dónde comprar» (derecha). -->
+        <div class="rejilla">
+          <section class="panel lista" aria-label="Productos">
+            <!-- Barra de la lista: botones de filtro (se dibujan en #chips) y selector de orden. -->
+            <div class="barra">
+              <div class="chips" id="chips" role="group" aria-label="Filtros"></div>
+              <div class="orden">
+                <select id="orden" aria-label="Ordenar por" title="Ordenar por">
+                  <option value="inversion">↕ Mayor inversión</option>
+                  <option value="ahorro">↕ Mayor ahorro</option>
+                  <option value="cantidad">↕ Mayor cantidad</option>
+                  <option value="descripcion">↕ Descripción (A–Z)</option>
+                  <option value="codigo">↕ Código</option>
+                </select>
+              </div>
+            </div>
+            <!-- Franja que aparece solo cuando se filtra por un proveedor desde el gráfico. -->
+            <div class="filtro-activo" id="filtro-activo" hidden></div>
+            <!-- Títulos de las 6 columnas. Cada fila de producto tiene las mismas 6 (ver componentes.css).
+                 «Ofertas» es la columna de los botones «Mejor oferta» y «Otras ofertas». -->
+            <div class="cabecera-lista"><span>Producto</span><span>Stock</span><span class="der">Comprar</span><span>Mejor proveedor</span><span>Ofertas</span><span class="der">Total</span></div>
+            <!-- Aquí se dibujan las filas de productos; los botones «Mejor oferta» y «Otras ofertas» de cada una abren la ventana de ofertas. -->
+            <div id="filas" aria-live="polite"></div>
+            <nav class="paginacion" id="paginacion" aria-label="Paginación"></nav>
+          </section>
+          <!-- PANEL DERECHO: inversión por proveedor ganador; un clic filtra la lista por ese proveedor. -->
+          <aside class="panel lateral" aria-label="Inversión por proveedor">
+            <h2>Dónde comprar <small id="prov-cuenta"></small></h2>
+            <p>Inversión por proveedor ganador. Haz clic para filtrar la lista.</p>
+            <div class="barras" id="barras"></div>
+            <button class="btn btn-fantasma ver-todos" id="ver-todos" type="button" hidden></button>
+          </aside>
+        </div>
+      </section>
+      <!-- PANTALLA 3 · ADMINISTRACIÓN (js/admin.js): las 5 tablas de los Excel con sus encabezados exactos. Se ve, busca, ordena,
+           edita en la misma fila, agrega, elimina, descarga como Excel, importa y se deshace desde el historial. -->
+      <!-- PANTALLA · TABLEROS DE CONTROL (js/control.js): empresas con menores valores, precios más baratos y productos que más consumen. -->
+      <section class="vista" id="vista-control" hidden aria-label="Tableros de control">
+        <div class="cab-vista">
+          <div><h1>Tableros de control</h1><p>Quién cobra menos, dónde están los mejores precios y qué productos más se consumen.</p></div>
+          <div class="tablero-acciones">
+            <button class="btn btn-fantasma" id="ct-actualizar" type="button" title="Volver a calcular con los datos de hoy"><span data-icono="refrescar" data-tam="16"></span>Actualizar</button>
+            <small class="hora-actualizado" id="ct-hora" aria-live="polite"></small>
+          </div>
+        </div>
+        <section class="panel ct-filtros" aria-label="Filtros de los tableros">
+          <label>Mostrar
+            <select id="ct-top" aria-label="Cuántos renglones mostrar en cada vista"><option value="5">5</option><option value="10" selected>10</option><option value="15">15</option><option value="20">20</option></select>
+            renglones</label>
+          <label>Empresas que cotizan al menos
+            <select id="ct-min" aria-label="Mínimo de productos que cotiza una empresa"><option value="1" selected>1</option><option value="3">3</option><option value="5">5</option><option value="10">10</option></select>
+            productos</label>
+          <div class="ct-activo" id="ct-activo" aria-live="polite"></div>
+        </section>
+        <section class="kpis" id="ct-kpis" aria-label="Resumen de los tableros"></section>
+        <div class="ct-rejilla">
+          <section class="panel ct-panel" id="ct-empresas" aria-label="Empresas con menores valores"></section>
+          <section class="panel ct-panel" id="ct-precios" aria-label="Precios más baratos"></section>
+          <section class="panel ct-panel ct-ancho" id="ct-consumo" aria-label="Productos que más consumen"></section>
+        </div>
+      </section>
+
+      <section class="vista" id="vista-admin" hidden aria-label="Administración">
+        <div class="cab-vista">
+          <div><h1>Administración</h1><p>Las tablas de tus Excel, tal como están en el programa: mira, edita, agrega y elimina filas.</p></div>
+          <div class="acciones-cab">
+            <button class="btn btn-fantasma" id="adm-historial" type="button"><span data-icono="reloj" data-tam="16"></span>Historial</button>
+            <button class="btn btn-fantasma" id="adm-importar" type="button"><span data-icono="subir" data-tam="16"></span>Importar Excel…</button>
+          </div>
+        </div>
+        <section class="panel adm-panel" aria-label="Tabla">
+          <!-- Una pestaña por tabla (las dibuja admin.js con el número de filas). -->
+          <div class="pestanas-adm"><div class="pestanas" role="tablist" id="adm-pestanas" aria-label="Tablas"></div></div>
+          <div class="adm-barra">
+            <label class="buscador">
+              <span data-icono="buscar" data-tam="18"></span>
+              <input id="adm-q" type="search" placeholder="Buscar en esta tabla…" autocomplete="off" aria-label="Buscar en la tabla">
+            </label>
+            <div class="adm-botones">
+              <button class="btn btn-primario" id="adm-agregar" type="button"><span data-icono="mas" data-tam="16"></span>Agregar fila</button>
+              <button class="btn btn-peligro" id="adm-eliminar" type="button" disabled>Eliminar seleccionadas</button>
+              <a class="btn btn-fantasma" id="adm-excel" href="#" download><span data-icono="descargar" data-tam="16"></span>Descargar Excel</a>
+            </div>
+          </div>
+          <!-- Franja «Mostrando las 3 filas del aviso …» (solo cuando se llegó desde un aviso) y barra de filas seleccionadas. -->
+          <div class="filtro-activo" id="adm-filtro" hidden></div>
+          <div class="adm-seleccion" id="adm-seleccion" hidden></div>
+          <div class="adm-tabla-caja"><table class="adm-tabla" id="adm-tabla" aria-live="polite"></table></div>
+          <nav class="paginacion" id="adm-pag" aria-label="Paginación de la tabla"></nav>
+        </section>
+      </section>
+      <!-- PANTALLA · ADICIONALES (js/adicionales.js): código y descripción de productos → Proveedor 1, 2 y 3 con su menor valor. -->
+      <section class="vista" id="vista-adicionales" hidden aria-label="Adicionales">
+        <div class="cab-vista">
+          <div><h1>Adicionales</h1><p>Productos por <b>código</b> y <b>descripción</b> con el <b>Proveedor 1, 2 y 3</b> y su <b>menor valor ofertado</b>.</p></div>
+        </div>
+        <div class="adi-barra-botones" role="toolbar" aria-label="Acciones de adicionales">
+          <div class="adi-grupo" data-roles="admin prime">
+            <button class="btn btn-primario" id="adi-agregar" type="button"><span data-icono="mas" data-tam="16"></span>Agregar</button>
+            <label class="btn btn-fantasma"><span data-icono="subir" data-tam="16"></span>Subir Excel<input type="file" id="adi-archivo" accept=".xlsx,.xlsm,.csv" hidden></label>
+            <a class="btn btn-fantasma" href="/api/adicionales/plantilla" download data-descarga="la plantilla"><span data-icono="archivo" data-tam="16"></span>Plantilla</a>
+          </div>
+          <div class="adi-grupo">
+            <a class="btn btn-fantasma" id="adi-excel" href="/api/adicionales/excel" download data-descarga="la lista de adicionales"><span data-icono="descargar" data-tam="16"></span>Descargar Excel</a>
+          </div>
+        </div>
+        <section class="kpis" id="adi-kpis" aria-label="Resumen de adicionales"></section>
+        <section class="panel adm-panel" aria-label="Productos adicionales y sus proveedores">
+          <div class="adm-barra">
+            <label class="buscador"><span data-icono="buscar" data-tam="18"></span><input id="adi-buscar" type="search" placeholder="Buscar código, descripción o proveedor" aria-label="Buscar"></label>
+            <label class="adi-ver-inh"><input type="checkbox" id="adi-ver-inh" checked> Mostrar inhabilitados <span class="n num" id="adi-n-inh">0</span></label>
+          </div>
+          <div class="adm-tabla-caja"><table class="adm-tabla adi-tabla" id="adi-tabla" aria-live="polite"></table></div>
+        </section>
+      </section>
+
+      <!-- PANTALLA 4 · USUARIOS (solo administrador; js/usuarios.js): crear usuarios y darles un perfil. -->
+      <section class="vista" id="vista-usuarios" hidden aria-label="Usuarios">
+        <div class="cab-vista">
+          <div><h1>Usuarios</h1><p>Quién puede entrar a la aplicación y qué puede hacer.</p></div>
+          <div class="acciones-cab"><button class="btn btn-primario" id="us-nuevo" type="button"><span data-icono="mas" data-tam="16"></span>Nuevo usuario</button></div>
+        </div>
+        <section class="perfiles" id="us-perfiles" aria-label="Qué puede hacer cada perfil"></section>
+        <section class="panel adm-panel" aria-label="Lista de usuarios">
+          <div class="adm-tabla-caja"><table class="adm-tabla" id="us-tabla" aria-live="polite"></table></div>
+        </section>
+      </section>
+
+      <!-- PANTALLA 5 · PRODUCTOS QUE NECESITAMOS (solo proveedor externo; js/proveedor.js): qué y cuánto se necesita, sin precios. -->
+      <section class="vista" id="vista-proveedor" hidden aria-label="Productos que necesitamos">
+        <div class="cab-vista">
+          <div><h1>Productos que necesitamos</h1><p>Esto es lo que la Clínica necesita. Descarga la ficha, escribe tu precio, IVA, unidad de empaque y la cantidad disponible (cuántas unidades puedes entregar), y súbela aquí abajo.</p>
+            <p class="nota" id="prov-nota-admin" hidden>Estás viendo esta pantalla como la ve el proveedor. Las fichas que envíen aparecen en «Ofertas de proveedores» (menú).</p></div>
+          <div class="acciones-cab">
+            <button class="btn btn-fantasma" id="prov-btn-sin" type="button" title="Insumos que la Clínica necesita y nadie ha cotizado todavía">Sin oferta <span class="n num" id="prov-n-sin">0</span></button>
+            <button class="btn btn-fantasma" id="prov-btn-nuevos" type="button" title="Productos nuevos que la Clínica necesita">Nuevos <span class="n num" id="prov-n-nuevos">0</span></button>
+            <a class="btn btn-primario" id="prov-excel" href="/api/proveedor/excel" download data-descarga="la ficha de cotización"><span data-icono="descargar" data-tam="16"></span>Descargar Excel</a></div>
+        </div>
+        <!-- ENVIAR MI OFERTA: solo para el proveedor. Su ficha queda PENDIENTE hasta que el administrador la apruebe (js/proveedor.js). -->
+        <section class="panel prov-envio" id="prov-envio" aria-label="Enviar mi oferta" hidden>
+          <div class="prov-envio-cab">
+            <div><h2>Enviar mi oferta</h2><p>Sube la ficha con tus precios. <b>Queda pendiente</b>: la Clínica la revisa y, cuando la aprueba, tus precios empiezan a competir.</p></div>
+            <label class="btn btn-primario" id="prov-subir"><span data-icono="subir" data-tam="16"></span>Subir mi ficha<input type="file" id="prov-archivo" accept=".xlsx,.xlsm" hidden></label>
+          </div>
+          <div id="prov-resultado" role="status" aria-live="polite"></div>
+          <h3>Mis fichas enviadas</h3>
+          <div id="prov-envios"></div>
+        </section>
+        <section class="panel adm-panel" aria-label="Productos">
+          <div class="adm-barra">
+            <label class="buscador"><span data-icono="buscar" data-tam="18"></span>
+              <input id="prov-q" type="search" placeholder="Buscar por código o descripción…" autocomplete="off" aria-label="Buscar productos"></label>
+            <span class="nota" id="prov-total"></span>
+          </div>
+          <div class="adm-tabla-caja"><table class="adm-tabla prov-tabla" id="prov-tabla" aria-live="polite"></table></div>
+          <nav class="paginacion" id="prov-pag" aria-label="Paginación"></nav>
+        </section>
+      </section>
+    </main>
+    <!-- PIE DE PÁGINA -->
+    <footer class="pie">
+      <span class="pie-marca"><img class="pie-logo" src="/static/img/logo-blanco.png" alt="Clínica Pabón" width="73" height="34"><span><b>Sede:</b> Clínica Cardioneurovascular Pabón · Cra 36 #12, Pasto, Nariño</span></span>
+      <!-- Certificaciones de la Clínica: solo se muestran en la pantalla de inicio (css/extras.css). -->
+      <span class="pie-certs"><img src="/static/img/certificaciones.png" alt="Certificaciones de la Clínica: ICONTEC ISO 9001, ISO 14001 e ISO 45001; IQNET; INVIMA Buenas Prácticas de Elaboración; Buenas Prácticas de Manufactura de planta de gases medicinales" width="792" height="161"></span>
+      <span>SUMIPABON · Compras</span>
+    </footer>
+  </div>
+  <!-- ==================== PANELES EMERGENTES ====================
+       <dialog> es el panel nativo del navegador: al abrirlo oscurece el resto, atrapa el teclado (Tab) y se cierra con Esc.
+       Cada botón con data-cerrar cierra el panel donde está. Los ids empiezan con ag- (agregar) o cg-/panel- (cargar). -->
+
+  <!-- PANEL «AGREGAR OFERTA MANUAL» (js/agregar.js). Si se abre desde el botón de un producto, ese producto ya viene elegido. -->
+  <!-- «Adicionales» → Agregar: ventana emergente para escribir o pegar productos (js/adicionales.js). -->
+  <dialog class="modal adi-modal" id="dlg-adicional" aria-labelledby="adi-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="mas" data-tam="22"></div>
+      <div><h1 id="adi-titulo">Agregar productos adicionales</h1><p>Escriba el código y la descripción. Verá al instante sus 3 proveedores más baratos.</p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <form id="adi-form" class="adi-modal-form">
+      <div class="v-cuerpo">
+        <div class="adi-pestanas" role="tablist">
+          <button type="button" role="tab" class="chip" data-modo="uno" aria-selected="true">Uno por uno</button>
+          <button type="button" role="tab" class="chip" data-modo="varios" aria-selected="false">Pegar varios desde Excel</button>
+        </div>
+        <div class="adi-modo" data-modo="uno">
+          <div class="adi-campos">
+            <label class="adi-c-cod">Código *<input id="adi-cod" autocomplete="off" placeholder="ej. 5929"></label>
+            <label class="adi-c-desc">Descripción<input id="adi-desc" autocomplete="off" placeholder="ej. ALCOHOL ANTISÉPTICO 700 ML"></label>
+          </div>
+        </div>
+        <div class="adi-modo" data-modo="varios" hidden>
+          <label class="adi-c-pegar">Copie en Excel las columnas <b>CÓDIGO</b> y <b>DESCRIPCIÓN</b> y péguelas aquí (una fila por producto)
+            <textarea id="adi-pegar" rows="7" placeholder="5929&#9;ALCOHOL ANTISÉPTICO 700 ML&#10;0041&#9;AGUJA HIPODÉRMICA 21G&#10;A1&#9;GUANTES NITRILO TALLA M"></textarea></label>
+          <p class="adi-cuenta" id="adi-cuenta">0 productos listos para agregar</p>
+        </div>
+        <div class="adi-hechos" id="adi-hechos" hidden></div>
+      </div>
+      <footer class="v-pie">
+        <button class="btn btn-fantasma" type="button" data-cerrar>Cerrar</button>
+        <button class="btn btn-fantasma" type="submit" value="otro" id="adi-otro">Agregar y seguir</button>
+        <button class="btn btn-primario" type="submit" value="listo"><span data-icono="check" data-tam="16"></span>Agregar</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="dlg-agregar" aria-labelledby="ag-titulo">
+    <!-- ZONA 1 · CABECERA -->
+    <header class="v-cab">
+      <div class="logo" data-icono="mas" data-tam="22"></div>
+      <div><h1 id="ag-titulo">Agregar oferta manual</h1><p>Compite con las ofertas del portafolio para ser la mejor.</p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <!-- ZONA 2 · CUERPO: el formulario. Es la única parte que se desplaza. -->
+    <div class="v-cuerpo">
+      <!-- Franja verde «Oferta guardada…» (solo con «Guardar y agregar otra»). -->
+      <div id="ag-banner" hidden></div>
+      <!-- El formulario en 3 pasos: Producto → Proveedor → Precio. -->
+      <div id="ag-form">
+        <section class="paso">
+          <!-- PASO 1 · Producto: buscador con lista desplegable; al elegir uno se reemplaza por su ficha (#ag-ficha). -->
+          <div class="etq"><i>1</i> Producto</div>
+          <div id="ag-producto-buscar">
+            <label class="campo"><span data-icono="buscar" data-tam="17"></span>
+              <input id="ag-buscar" placeholder="Escribe el código o parte de la descripción…" autocomplete="off" aria-label="Buscar producto"
+                     role="combobox" aria-expanded="false" aria-controls="ag-resultados"></label>
+            <ul class="resultados" id="ag-resultados" role="listbox" hidden></ul>
+          </div>
+          <div class="ficha" id="ag-ficha" hidden></div>
+        </section>
+
+        <section class="paso">
+          <!-- PASO 2 · Proveedor: uno existente, o «＋ Proveedor nuevo…» que muestra el campo de nombre. -->
+          <div class="etq"><i>2</i> Proveedor</div>
+          <label class="campo"><select id="ag-proveedor" aria-label="Proveedor"></select></label>
+          <label class="campo" id="ag-caja-nuevo" hidden><input id="ag-proveedor-nuevo" maxlength="120" placeholder="Nombre del proveedor nuevo" aria-label="Nombre del proveedor nuevo"></label>
+          <p class="pista-campo" id="ag-pista-proveedor"></p>
+        </section>
+
+        <section class="paso">
+          <!-- PASO 3 · Precio: valor por unidad (acepta 12.500 / 12,5 / 1.234,50) y presentación opcional. -->
+          <div class="etq"><i>3</i> Precio</div>
+          <div class="dos">
+            <label class="campo"><span>$</span><input id="ag-valor" inputmode="decimal" placeholder="Valor por unidad" autocomplete="off" aria-label="Valor por unidad"></label>
+            <label class="campo"><input id="ag-presentacion" list="ag-presentaciones" maxlength="40" placeholder="Presentación (opcional)" autocomplete="off" aria-label="Presentación"></label>
+          </div>
+          <datalist id="ag-presentaciones"><option value="X1"><option value="X10"><option value="X12"><option value="X20"><option value="X30"><option value="X50"><option value="X100"><option value="X500"><option value="X1000"></datalist>
+          <div class="uno"><label class="campo"><input id="ag-disponible" inputmode="numeric" placeholder="Cantidad disponible (opcional)" autocomplete="off" aria-label="Cantidad disponible"></label></div>
+          <p class="pista-campo" id="ag-pista-valor">Valor por unidad, igual que en el portafolio.</p>
+          <p class="pista-campo">Cantidad disponible: cuántas unidades puede entregar este proveedor. Si no le alcanzan para todo, la compra se reparte con el siguiente.</p>
+        </section>
+
+        <!-- VISTA PREVIA: en qué puesto quedaría la oferta. La dibuja agregar.js con cada cambio. -->
+        <section class="previa" id="ag-previa" hidden aria-live="polite"></section>
+        <!-- Mensajes de error del servidor (ej. «El valor debe ser mayor que 0»). -->
+        <p class="error" id="ag-error" role="alert" hidden></p>
+      </div>
+    </div>
+    <!-- ZONA 3 · PIE: los botones de guardar se activan solo cuando producto, proveedor y precio son válidos. -->
+    <footer class="v-pie">
+      <button class="btn btn-fantasma" id="ag-cancelar" type="button" data-cerrar>Cancelar</button>
+      <button class="btn" id="ag-guardar-otra" type="button" disabled>Guardar y agregar otra</button>
+      <button class="btn btn-primario" id="ag-guardar" type="button" disabled>Guardar y cerrar</button>
+    </footer>
+  </dialog>
+
+  <!-- PANEL «CARGAR DATOS» (js/cargar.js): subir Excel o agregar a mano productos, proveedores y cotizaciones.
+       cargar.js dibuja las pestañas (#cg-pestanas) y llena cada panel (#panel-…) cada vez que se abre. -->
+  <dialog class="modal ancho" id="dlg-cargar" aria-labelledby="cg-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="subir" data-tam="22"></div>
+      <div><h1 id="cg-titulo">Cargar datos</h1><p>Sube un Excel o agrégalos a mano: productos, proveedores y cotizaciones.</p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <!-- Las tres pestañas: Productos · Proveedores · Cotizaciones. -->
+    <div class="pestanas-datos"><div class="pestanas" role="tablist" id="cg-pestanas" aria-label="Qué quieres cargar"></div></div>
+    <!-- Un panel por pestaña; solo se ve el de la pestaña elegida. -->
+    <div class="v-cuerpo">
+      <section id="panel-productos" role="tabpanel" aria-label="Productos"></section>
+      <section id="panel-proveedores" role="tabpanel" aria-label="Proveedores" hidden></section>
+      <section id="panel-cotizaciones" role="tabpanel" aria-label="Cotizaciones" hidden></section>
+    </div>
+    <footer class="v-pie">
+      <span class="pista-pie">Lo que cargues aquí se conserva al pulsar «Actualizar Excel».</span>
+      <button class="btn btn-primario" type="button" data-cerrar>Listo, cerrar</button>
+    </footer>
+  </dialog>
+
+  <!-- VENTANA «OFERTAS DEL PRODUCTO» (js/podio.js dibuja su contenido; app.js → abrirOfertas la abre).
+       La abren los botones «Mejor oferta» y «Otras ofertas» de cada fila y muestra ese contenido (con pestañas para pasar de una vista a otra).
+       Va DESPUÉS de los otros paneles a propósito: si desde aquí se abre «Agregar oferta», ese queda encima y los avisos salen en él. -->
+  <dialog class="modal extra" id="dlg-ofertas" aria-labelledby="of-titulo">
+    <header class="v-cab">
+      <div class="logo" id="of-icono"></div>
+      <div><h1 id="of-titulo">Mejor oferta</h1><p id="of-sub"></p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <!-- Aquí se monta el panel de ofertas del producto (tarjetas, pestañas y botones «Elegir esta»). Es la única parte que se desplaza. -->
+    <div class="v-cuerpo" id="of-cuerpo"></div>
+    <footer class="v-pie">
+      <span class="pista-pie">Elegir otro proveedor cambia el total y la hoja VALORES.</span>
+      <button class="btn btn-primario" type="button" data-cerrar>Cerrar</button>
+    </footer>
+  </dialog>
+
+  <!-- FICHA DE LA EMPRESA: se abre al pulsar el NOMBRE de un proveedor (js/empresa.js). Va después de «Ofertas» para quedar encima de ella. -->
+  <dialog class="modal extra" id="dlg-empresa" aria-labelledby="emp-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="empresa" data-tam="22"></div>
+      <div><h1 id="emp-titulo">Empresa</h1><p id="emp-sub"></p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <div class="v-cuerpo" id="emp-cuerpo"></div>
+    <footer class="v-pie"><span class="pista-pie">Los datos de contacto se escriben en Administración → Empresas.</span><button class="btn btn-primario" type="button" data-cerrar>Cerrar</button></footer>
+  </dialog>
+
+  <!-- VENTANA DE ESPERA «EL VIAJE A LA CLÍNICA» (js/viaje.js): sale mientras el servidor crea el usuario o restablece la clave y se cierra
+       sola al llegar, mostrando entonces el usuario y la clave temporal. La escena está en frontend/viaje/escena.txt (se mete en el Shadow DOM de #vj-escena). -->
+  <dialog class="modal viaje" id="dlg-viaje" aria-labelledby="vj-titulo" aria-describedby="vj-texto">
+    <div class="viaje-cuerpo">
+      <h2 id="vj-titulo">Creando el usuario…</h2>
+      <div class="viaje-escena" id="vj-escena" aria-hidden="true"></div>
+      <p id="vj-texto" role="status" aria-live="polite"></p>
+      <div class="vj-barra" aria-hidden="true"><div id="vj-progreso"></div></div>
+    </div>
+  </dialog>
+
+  <!-- ==================== VENTANAS DE SEGURIDAD ==================== -->
+  <!-- CAMBIAR MI CLAVE (js/app.js → pedirClaveNueva). Con clave temporal es obligatoria: no tiene «Cancelar» ni se cierra con Esc. -->
+  <dialog class="modal confirmar-clave" id="dlg-clave" aria-labelledby="cl-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="llave" data-tam="22"></div>
+      <div><h1 id="cl-titulo">Cambiar mi clave</h1><p id="cl-sub"></p></div>
+    </header>
+    <form id="cl-form">
+      <div class="v-cuerpo">
+        <label class="grupo"><span class="etiqueta-campo">Clave actual</span><span class="campo"><input id="cl-actual" type="password" autocomplete="current-password" required></span></label>
+        <label class="grupo"><span class="etiqueta-campo">Clave nueva</span><span class="campo"><input id="cl-nueva" type="password" autocomplete="new-password" required></span></label>
+        <label class="grupo"><span class="etiqueta-campo">Repite la clave nueva</span><span class="campo"><input id="cl-repite" type="password" autocomplete="new-password" required></span></label>
+        <p class="nota">Mínimo 8 caracteres, con letras y números.</p>
+        <p class="error" id="cl-error" role="alert" hidden></p>
+      </div>
+      <footer class="v-pie">
+        <button class="btn btn-fantasma" id="cl-cancelar" type="button" data-cerrar>Cancelar</button>
+        <button class="btn btn-primario" id="cl-guardar" type="submit">Guardar clave</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- USUARIO: crear o editar (js/usuarios.js). -->
+  <dialog class="modal" id="dlg-usuario" aria-labelledby="us-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="usuarios" data-tam="22"></div>
+      <div><h1 id="us-titulo">Nuevo usuario</h1><p id="us-sub"></p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <div class="v-cuerpo">
+      <div class="af-campos" id="us-campos"></div>
+      <p class="error" id="us-error" role="alert" hidden></p>
+    </div>
+    <footer class="v-pie">
+      <button class="btn btn-fantasma" type="button" data-cerrar>Cancelar</button>
+      <button class="btn btn-primario" id="us-guardar" type="button">Guardar</button>
+    </footer>
+  </dialog>
+
+  <!-- CLAVE TEMPORAL: se muestra UNA sola vez al crear un usuario o restablecer su clave. -->
+  <dialog class="modal confirmar-clave" id="dlg-clave-temporal" aria-labelledby="ct-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="llave" data-tam="22"></div>
+      <div><h1 id="ct-titulo">Clave temporal</h1><p>Entrégasela al usuario. Esta es la única vez que se muestra.</p></div>
+    </header>
+    <div class="v-cuerpo">
+      <div class="clave-caja">
+        <div><small>Usuario</small><strong id="ct-usuario"></strong></div>
+        <div><small>Clave temporal</small><strong class="clave-valor" id="ct-clave"></strong></div>
+      </div>
+      <div id="ct-envio" class="ct-envio" aria-live="polite"></div>
+      <p class="nota">Al entrar por primera vez, el sistema le pedirá elegir su propia clave.</p>
+    </div>
+    <footer class="v-pie">
+      <button class="btn" id="ct-copiar" type="button"><span data-icono="copiar" data-tam="16"></span>Copiar clave</button>
+      <button class="btn btn-primario" type="button" data-cerrar>Listo</button>
+    </footer>
+  </dialog>
+
+  <!-- ==================== VENTANAS DE LA ADMINISTRACIÓN (js/admin.js) ==================== -->
+  <!-- AGREGAR FILA: un campo por columna de la tabla abierta (los llena admin.js; un aviso puede traerlos ya escritos). -->
+  <dialog class="modal" id="dlg-admin-fila" aria-labelledby="af-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="mas" data-tam="22"></div>
+      <div><h1 id="af-titulo">Agregar fila</h1><p id="af-sub"></p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <div class="v-cuerpo">
+      <div class="af-campos" id="af-campos"></div>
+      <p class="error" id="af-error" role="alert" hidden></p>
+    </div>
+    <footer class="v-pie">
+      <button class="btn btn-fantasma" type="button" data-cerrar>Cancelar</button>
+      <button class="btn" id="af-otra" type="button">Guardar y agregar otra</button>
+      <button class="btn btn-primario" id="af-guardar" type="button">Guardar</button>
+    </footer>
+  </dialog>
+
+  <!-- IMPORTAR EXCEL (el del menú «Actualizar Excel» y el de la administración): qué tablas, y si reemplazar o agregar. -->
+  <dialog class="modal ancho" id="dlg-importar" aria-labelledby="imp-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="refrescar" data-tam="22"></div>
+      <div><h1 id="imp-titulo">Actualizar Excel</h1><p>Trae los Excel a las tablas: tú eliges cuáles y cómo.</p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <div class="v-cuerpo" id="imp-cuerpo"></div>
+    <footer class="v-pie">
+      <span class="pista-pie">Cada importación queda en el Historial y se puede deshacer.</span>
+      <button class="btn btn-primario" type="button" data-cerrar>Cerrar</button>
+    </footer>
+  </dialog>
+
+  <!-- HISTORIAL: los últimos cambios de la administración, cada uno con su botón «Deshacer». -->
+  <dialog class="modal ancho" id="dlg-historial" aria-labelledby="hist-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="reloj" data-tam="22"></div>
+      <div><h1 id="hist-titulo">Historial de cambios</h1><p>Lo que se agregó, editó, eliminó o importó. Puedes deshacerlo.</p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <div class="v-cuerpo" id="hist-cuerpo"></div>
+    <footer class="v-pie">
+      <span class="pista-pie">Se recuerdan los últimos 300 cambios y las copias de las últimas 5 importaciones.</span>
+      <button class="btn btn-primario" type="button" data-cerrar>Cerrar</button>
+    </footer>
+  </dialog>
+
+  <!-- «SIN OFERTA» y «NUEVOS» del proveedor: ventana con la lista, su buscador y el botón de descargar (js/proveedor.js → listaBuscable). -->
+  <dialog class="modal ancho" id="dlg-prov-lista" aria-labelledby="pl-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="lista" data-tam="22"></div>
+      <div><h1 id="pl-titulo">Productos sin oferta</h1><p id="pl-sub"></p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <div class="v-cuerpo" id="pl-cuerpo"></div>
+    <footer class="v-pie"><span class="pista-pie">El Excel que bajas es la ficha de cotización con esos productos, lista para llenar y subir.</span><button class="btn btn-primario" type="button" data-cerrar>Cerrar</button></footer>
+  </dialog>
+
+  <!-- ALTERNATIVAS 2.º A 4.º (administrador y Prime): explica y baja el libro (js/alternativas.js). -->
+  <dialog class="modal ancho" id="dlg-alternativas" aria-labelledby="alt-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="descargar" data-tam="22"></div>
+      <div><h1 id="alt-titulo">Alternativas 2.º a 4.º</h1><p>El 2.º, 3.º y 4.º proveedor de cada producto, con el formato de la OC.</p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <div class="v-cuerpo" id="alt-cuerpo"></div>
+    <footer class="v-pie"><button class="btn btn-primario" type="button" data-cerrar>Cerrar</button></footer>
+  </dialog>
+
+  <!-- OFERTAS DE PROVEEDORES (administrador): las fichas con precios que enviaron los proveedores. Se revisan frente a la mejor oferta de hoy y se
+       aprueban (empiezan a competir en el tablero) o se rechazan (js/pendientes.js). -->
+  <dialog class="modal ancho" id="dlg-pendientes" aria-labelledby="pend-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="lista" data-tam="22"></div>
+      <div><h1 id="pend-titulo">Ofertas de proveedores</h1><p id="pend-sub">Fichas con precios que enviaron los proveedores.</p></div>
+      <button class="btn-icono cerrar-modal" type="button" data-cerrar aria-label="Cerrar"><span data-icono="x" data-tam="18"></span></button>
+    </header>
+    <div class="lb-barra pend-barra"><label class="buscador"><span data-icono="buscar" data-tam="18"></span><input id="pend-q" type="search" placeholder="Buscar por proveedor, archivo, código o descripción…" autocomplete="off" aria-label="Buscar"></label></div>
+    <div class="v-cuerpo" id="pend-cuerpo"></div>
+    <footer class="v-pie">
+      <span class="pista-pie" id="pend-pista">Los precios no compiten hasta que apruebes la ficha.</span>
+      <a class="btn btn-fantasma" id="pend-excel" href="#" download data-descarga="el Excel de la ficha" hidden><span data-icono="descargar" data-tam="16"></span>Descargar Excel</a>
+      <button class="btn btn-fantasma" id="pend-volver" type="button" hidden>← Volver a la lista</button>
+      <button class="btn" id="pend-restaurar" type="button" hidden title="Deshace la decisión y deja la ficha otra vez pendiente de revisión"><span data-icono="deshacer" data-tam="16"></span>Restaurar</button>
+      <button class="btn btn-peligro" id="pend-rechazar" type="button" hidden>Rechazar</button>
+      <button class="btn btn-primario" id="pend-aprobar" type="button" hidden>Aprobar</button>
+      <button class="btn btn-fantasma" type="button" data-cerrar>Cerrar</button>
+    </footer>
+  </dialog>
+
+  <!-- CONFIRMAR: pregunta antes de eliminar o reemplazar (el texto lo pone admin.js). El foco empieza en «Cancelar», el lado seguro. -->
+  <dialog class="modal confirmar" id="dlg-confirmar" aria-labelledby="cf-titulo">
+    <header class="v-cab">
+      <div class="logo" data-icono="alerta" data-tam="22"></div>
+      <div><h1 id="cf-titulo">¿Seguro?</h1></div>
+    </header>
+    <div class="v-cuerpo" id="cf-cuerpo"></div>
+    <footer class="v-pie">
+      <button class="btn btn-fantasma" id="cf-cancelar" type="button" data-cerrar autofocus>Cancelar</button>
+      <button class="btn btn-peligro" id="cf-ok" type="button">Aceptar</button>
+    </footer>
+  </dialog>
+
+  <!-- Espacio de los avisos flotantes (los llena util.js → toast; si hay un panel abierto, se muestran dentro de él). -->
+  <div id="toasts"></div>
+  <!-- Programa de la página. type="module" permite que app.js importe los demás archivos de js/. -->
+  <script src="/static/js/nexo.js"></script>
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
