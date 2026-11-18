@@ -69,7 +69,7 @@ PLANTILLAS DE WHATSAPP: UNA DIFERENTE PARA CADA SISTEMA
     acceso_sentinel    (en sentinel/.env:  SENTINEL_WHATSAPP_PLANTILLA=acceso_sentinel)
       Hola {{1}}, ya tiene acceso a SENTINEL PABON (copias de seguridad) de la Clínica Cardioneurovascular Pabón.
       Usuario: {{2}}  Clave temporal: {{3}}  Entre aquí: {{4}}
-      Puede cambiar su clave después en «Mi clave». Mensaje enviado por Nexo S².
+      Mensaje enviado por Nexo S².
 
     Opcionales, para "Nueva clave" (mismo formato, empezando "Hola {{1}}, se restableció su clave de ..."):
       clave_sumipabon  → COMPRAS_WHATSAPP_PLANTILLA_RESTABLECER     clave_sentinel → SENTINEL_WHATSAPP_PLANTILLA_RESTABLECER
