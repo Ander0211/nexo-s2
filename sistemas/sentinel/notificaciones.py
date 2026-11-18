@@ -204,7 +204,7 @@ def _rol(rol: str) -> str:
 def mensaje(nombre, usuario, clave, url, rol, restablecida=False) -> str:
     apertura, cierre = _frases(restablecida)
     return nexo_correo.encabezado_texto("sentinel") + "\n\n" + (f"Hola {nombre}, {apertura} SENTINEL PABON, copias de seguridad (Clínica Cardioneurovascular Pabón).\n\n"
-            f"Dirección: {url}\nUsuario: {usuario}\nClave temporal: {clave}\nPerfil: {_rol(rol)}" + (f"\n\n{cierre}" if cierre else ""))
+            f"Usuario: {usuario}\nClave temporal: {clave}\nPerfil: {_rol(rol)}\n\nIngresa aquí: {url}" + (f"\n\n{cierre}" if cierre else ""))
 
 
 def mensaje_html(nombre, usuario, clave, url, rol, restablecida=False) -> str:
@@ -212,8 +212,11 @@ def mensaje_html(nombre, usuario, clave, url, rol, restablecida=False) -> str:
     apertura, cierre = _frases(restablecida)
     boton = ""
     if url.lower().startswith(("http://", "https://")):
-        boton = (f'<p style="margin:22px 0"><a href="{e(url, quote=True)}" style="display:inline-block;background:#015AAA;'
-                 'color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:6px">Entrar a SENTINEL</a></p>')
+        # Botón grande (tabla: así se ve igual en Gmail, Outlook y el celular). La dirección no se escribe a la vista.
+        boton = ('<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 18px"><tr>'
+                 f'<td style="border-radius:8px;background:#0e8f6a"><a href="{e(url, quote=True)}" target="_blank" '
+                 'style="display:inline-block;padding:14px 34px;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;'
+                 'color:#ffffff;text-decoration:none;border-radius:8px">Ingresar a SENTINEL</a></td></tr></table>')
     return ('<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;color:#1d2733;line-height:1.5">'
             f"<p>Hola <b>{e(nombre)}</b>, {apertura} <b>SENTINEL PABON</b>, copias de seguridad (Clínica Cardioneurovascular Pabón).</p>"
             '<table style="border-collapse:collapse;margin:8px 0">'
