@@ -192,9 +192,9 @@ def normalizar_celular(celular: str | None) -> str | None:
 
 def _frases(restablecida: bool) -> tuple[str, str]:
     if restablecida:
-        return ("se restableció su clave de acceso a",
-                "Su clave anterior ya no sirve: entre con esta. Si no esperaba este cambio, avise al administrador. No comparta este mensaje.")
-    return ("ya tiene acceso a", "")  # usuario nuevo: el mensaje termina en los datos de acceso
+        return ("se restableció tu clave de acceso a",
+                "Al entrar, el sistema te pedirá elegir una clave nueva. Si no esperabas este cambio, avisa al administrador. No compartas este mensaje.")
+    return ("ya tienes acceso a", "Al entrar por primera vez el sistema te pedirá elegir tu propia clave. No compartas este mensaje.")
 
 
 def _rol(rol: str) -> str:
@@ -204,7 +204,7 @@ def _rol(rol: str) -> str:
 def mensaje(nombre, usuario, clave, url, rol, restablecida=False) -> str:
     apertura, cierre = _frases(restablecida)
     return nexo_correo.encabezado_texto("sentinel") + "\n\n" + (f"Hola {nombre}, {apertura} SENTINEL PABON, copias de seguridad (Clínica Cardioneurovascular Pabón).\n\n"
-            f"Dirección: {url}\nUsuario: {usuario}\nClave: {clave}\nPerfil: {_rol(rol)}" + (f"\n\n{cierre}" if cierre else ""))
+            f"Dirección: {url}\nUsuario: {usuario}\nClave temporal: {clave}\nPerfil: {_rol(rol)}" + (f"\n\n{cierre}" if cierre else ""))
 
 
 def mensaje_html(nombre, usuario, clave, url, rol, restablecida=False) -> str:
@@ -218,7 +218,7 @@ def mensaje_html(nombre, usuario, clave, url, rol, restablecida=False) -> str:
             f"<p>Hola <b>{e(nombre)}</b>, {apertura} <b>SENTINEL PABON</b>, copias de seguridad (Clínica Cardioneurovascular Pabón).</p>"
             '<table style="border-collapse:collapse;margin:8px 0">'
             f'<tr><td style="padding:4px 18px 4px 0;color:#5f6b7a">Usuario</td><td><b>{e(usuario)}</b></td></tr>'
-            f'<tr><td style="padding:4px 18px 4px 0;color:#5f6b7a">Clave</td><td><b style="font-family:Consolas,monospace;font-size:16px">{e(clave)}</b></td></tr>'
+            f'<tr><td style="padding:4px 18px 4px 0;color:#5f6b7a">Clave temporal</td><td><b style="font-family:Consolas,monospace;font-size:16px">{e(clave)}</b></td></tr>'
             f'<tr><td style="padding:4px 18px 4px 0;color:#5f6b7a">Perfil</td><td>{e(_rol(rol))}</td></tr></table>'
             f'{boton}' + (f'<p style="font-size:13px;color:#5f6b7a">{e(cierre)}</p>' if cierre else "") + '</div>')
 
@@ -292,7 +292,7 @@ def enviar_credenciales(u: dict, clave: str, url: str, restablecida: bool = Fals
         r["correo"] = {"estado": NO_CONFIGURADO, "detalle": "El envío de correo no está configurado (ni en sentinel/.env ni en el .env de SUMIPABON)."}
     else:
         try:
-            enviar_correo(u["correo"], "Se restableció su clave de SENTINEL PABON" if restablecida else "Su acceso a SENTINEL PABON", texto,
+            enviar_correo(u["correo"], "Se restableció tu clave de SENTINEL PABON" if restablecida else "Tu acceso a SENTINEL PABON", texto,
                           mensaje_html(u["nombre"], u["usuario"], clave, url, u["rol"], restablecida))
             r["correo"] = {"estado": ENVIADO, "detalle": f"Enviado a {u['correo']}."}
         except NotificacionError as e:
@@ -308,5 +308,5 @@ def enviar_credenciales(u: dict, clave: str, url: str, restablecida: bool = Fals
         except NotificacionError as e:
             r["whatsapp"] = {"estado": ERROR, "detalle": str(e)}
     if u.get("celular") and r["whatsapp"]["estado"] != ENVIADO:
-        r["enlace_whatsapp"] = enlace_whatsapp(u["celular"], texto)
+        r["enlace_whatsapp"] = enlace_whatsapp(u["celular"], texto + "\n\n" + nexo_correo.PIE)
     return r

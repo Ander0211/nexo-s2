@@ -26,7 +26,7 @@
 
     <section class="panel" id="pCrear" hidden>
       <h2>Crear usuario</h2>
-      <p>La clave se crea <b>automáticamente</b> y se envía con el usuario por <b>correo</b> y por <b>WhatsApp</b>. Con ella la persona entra de una vez (después puede cambiarla en «Mi clave», si quiere).</p>
+      <p>Se crea una <b>clave temporal automática</b> y se envía con el usuario por <b>correo</b> y por <b>WhatsApp</b>. Al entrar por primera vez, la persona elige su propia clave.</p>
       <p class="msg" id="mCrear" hidden></p>
       <form id="fCrear" class="fila">
         <label>Nombre<input id="cNombre" required autocomplete="off"></label>
@@ -51,10 +51,10 @@
     <!-- Clave temporal: se muestra una sola vez, con lo que pasó en el correo y en WhatsApp -->
     <dialog id="dTemporal" class="dialogo">
       <h2 id="dtTitulo">Usuario creado</h2>
-      <p>Esta es la clave con la que la persona entra. Se muestra <b>solo esta vez</b>: cópiela si necesita dársela a mano.</p>
+      <p>Esta clave temporal se muestra <b>solo esta vez</b>. Al entrar, la persona deberá elegir su propia clave.</p>
       <div class="credencial">
         <div><small>Usuario</small><b id="dtUsuario"></b></div>
-        <div><small>Clave</small><b id="dtClave" class="clave-mono"></b></div>
+        <div><small>Clave temporal</small><b id="dtClave" class="clave-mono"></b></div>
         <button class="btn" type="button" id="dtCopiar">Copiar clave</button>
       </div>
       <h3>Envío</h3>

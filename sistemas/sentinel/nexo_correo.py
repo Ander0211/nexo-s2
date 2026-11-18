@@ -46,8 +46,11 @@ def texto(sistema: str, cuerpo: str) -> str:
     return f"{encabezado_texto(sistema)}\n\n{cuerpo}"
 
 
+PIE = f"Mensaje enviado por {NOMBRE}, la plataforma que reúne SUMIPABON y SENTINEL PABON de la {CLINICA}."
+
+
 def pie_texto(sistema: str) -> str:
-    return f"\n\n--\nEnviado por {NOMBRE} · {SISTEMAS[sistema]['nombre']} · {CLINICA}"
+    return f"\n\n--\n{PIE}"
 
 
 def _html(sistema: str, contenido: str, con_logo: bool) -> str:

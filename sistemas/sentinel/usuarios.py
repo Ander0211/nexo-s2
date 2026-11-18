@@ -130,7 +130,7 @@ def _limpiar_usuario(u: str) -> str:
 def _publico(u: str, r: dict) -> dict:
     return {"usuario": u, "nombre": r.get("nombre", u), "rol": r.get("rol"), "activo": r.get("activo", True),
             "superusuario": bool(r.get("superusuario")),
-            "correo": r.get("correo"), "celular": r.get("celular"), "debe_cambiar": False,  # la clave enviada sirve directamente (ya no se obliga a cambiarla)
+            "correo": r.get("correo"), "celular": r.get("celular"), "debe_cambiar": bool(r.get("temporal")),  # clave enviada por correo/WhatsApp: al primer ingreso debe elegir la suya
             "creado": r.get("creado"), "ultimo_ingreso": r.get("ultimo_ingreso")}
 
 
@@ -352,7 +352,7 @@ def cambiar_mi_clave(usuario: str, actual: str, nueva: str) -> None:
 
 
 def crear(quien: str, payload: dict) -> tuple[dict, str]:
-    """Crea un usuario con una clave generada automáticamente (sirve para entrar de una vez). Devuelve (usuario, clave)."""
+    """Crea un usuario con una clave temporal automática (al primer ingreso elige la suya). Devuelve (usuario, clave)."""
     with _LOCK:
         usuarios = _leer()
         u = _limpiar_usuario(payload.get("usuario"))
@@ -366,7 +366,7 @@ def crear(quien: str, payload: dict) -> tuple[dict, str]:
             raise ErrorUsuario("Escriba el nombre de la persona.")
         correo, celular = _contacto(usuarios, payload.get("correo"), payload.get("celular"))
         clave = clave_temporal()
-        usuarios[u] = {"nombre": nombre, "rol": rol, "activo": True, "correo": correo, "celular": celular,
+        usuarios[u] = {"nombre": nombre, "rol": rol, "activo": True, "correo": correo, "celular": celular, "temporal": True,
                        "creado": datetime.now().isoformat(timespec="seconds"), **_nueva_clave(clave)}
         _guardar(usuarios)
     auditar(quien, "usuarios: crear", f"{u} ({rol})")
@@ -374,7 +374,7 @@ def crear(quien: str, payload: dict) -> tuple[dict, str]:
 
 
 def restablecer(quien: str, usuario: str) -> tuple[dict, str]:
-    """Clave nueva generada automáticamente; cierra sus sesiones."""
+    """Clave temporal nueva automática (al entrar elige una propia); cierra sus sesiones."""
     with _LOCK:
         usuarios = _leer()
         u = str(usuario or "").strip().lower()
@@ -383,10 +383,10 @@ def restablecer(quien: str, usuario: str) -> tuple[dict, str]:
             raise ErrorUsuario("Ese usuario no existe.", 404)
         _exigir_no_superusuario(r, u, "su clave no se restablece desde la pantalla")
         clave = clave_temporal()
-        if True:  # la clave anterior queda reemplazada: se recuerda su huella para avisar si alguien la usa
-            r["anteriores"] = ([{"sal": r["sal"], "hash": r["hash"]}] + r.get("anteriores", []))[:3]
+        # la clave anterior queda reemplazada: se recuerda su huella para avisar si alguien la usa
+        r["anteriores"] = ([{"sal": r["sal"], "hash": r["hash"]}] + r.get("anteriores", []))[:3]
         r.update(_nueva_clave(clave))
-        r.pop("temporal", None)
+        r["temporal"] = True  # al entrar con ella, debe elegir una clave nueva
         _FALLOS.pop(u, None)
         _cerrar_sesiones_de(u)
         _guardar(usuarios)
