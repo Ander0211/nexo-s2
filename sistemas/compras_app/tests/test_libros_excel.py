@@ -311,12 +311,25 @@ def test_la_hoja_ordenes_conserva_el_formato_y_las_formulas_del_original(cliente
         o["B3"].value == "=IF(A3<>0,B2+1,((B2-B2)))" and o["V4"].value == "=S4*Q4" and o["A4"].value == "=DINAMICA!A6"
     )
     assert o["Y2"].value is None  # el IVA queda vacío, como en OC.xlsm
-    assert o.max_row == 4  # 3 productos ganadores + el encabezado
-    for fila in (1, 2, 3, 4):  # las mismas celdas combinadas del original en cada fila
+    # 3 productos de 2 proveedores + UNA FILA EN BLANCO después de cada proveedor (como OC.xlsm) + el encabezado
+    assert o.max_row == 6
+    for fila in (1, 2, 3, 4, 5, 6):  # las mismas celdas combinadas del original en cada fila (también en las de separación)
         assert {str(m) for m in o.merged_cells.ranges if m.min_row == fila} == {
             f"{a}{fila}:{b}{fila}" for a, b in (("C", "F"), ("G", "P"), ("Q", "R"), ("S", "U"), ("V", "X"), ("Y", "Z"))
         }
-    assert o["Q2"].number_format == "#,##0" and o["A1"].font.b and o.row_dimensions[1].height > 30
+    assert o["Q2"].number_format == "General" and o["A1"].font.b and o.row_dimensions[1].height > 30  # «General» como OC.xlsm
+
+
+def test_dinamica_deja_una_fila_en_blanco_por_proveedor_y_el_item_se_reinicia(cliente):
+    """Como en OC.xlsm: en DINAMICA, después de cada proveedor queda una fila vacía; en ORDENES esa fila da 0 (se oculta) y el ITEM
+    del proveedor siguiente vuelve a empezar en 1."""
+    wb = openpyxl.load_workbook(io.BytesIO(cliente.get("/api/exportar/oc").content), data_only=True)
+    d, o = wb["DINAMICA"], wb["ORDENES"]
+    assert [[d.cell(r, c).value for c in (1, 2)] for r in range(4, 9)] == [
+        ["ALFA SAS", "0041"], ["ALFA SAS", "C3"], [None, None], ["BETA SAS", "A1"], [None, None]]
+    assert [o.cell(r, 2).value for r in range(2, 7)] == [1, 2, 0, 1, 0]  # ITEM: 1, 2 · (separador) · 1 · (separador)
+    assert [o.cell(r, 1).value for r in range(2, 7)] == ["ALFA SAS", "ALFA SAS", 0, "BETA SAS", 0]
+    assert d.column_dimensions["C"].width > 100 and not d["A3"].font.b  # descripción ancha y encabezado como lo deja la tabla dinámica
 
 
 def test_la_oc_respeta_el_proveedor_elegido_a_mano_y_la_cantidad_editada(cliente):
@@ -413,7 +426,7 @@ def test_cada_puesto_trae_sus_VALORES_DINAMICA_y_ORDENES_como_la_primera_oc(clie
             valor,
             80 * valor,
         ], puesto
-        assert o.max_row == 2
+        assert o.max_row == 3 and o["B3"].value == 0  # la fila en blanco después del proveedor (como OC.xlsm)
 
 
 def test_las_hojas_de_alternativas_tienen_las_formulas_y_el_formato_del_original(cliente):
@@ -437,8 +450,8 @@ def test_las_hojas_de_alternativas_tienen_las_formulas_y_el_formato_del_original
             "V2:X2",
             "Y2:Z2",
         }
-        assert o["Q2"].number_format == "#,##0" and o["V2"].number_format == "#,##0" and o["A1"].font.b
-        assert wb[f"DINAMICA{suf}"]["D4"].number_format == "#,##0" and wb[f"DINAMICA{suf}"]["A3"].font.b
+        assert o["Q2"].number_format == "General" and o["V2"].number_format == "General" and o["A1"].font.b
+        assert wb[f"DINAMICA{suf}"]["D4"].number_format == "General"  # como OC.xlsm
 
 
 def test_las_alternativas_usan_la_cantidad_editada_y_no_repiten_a_un_proveedor(cliente):
@@ -460,13 +473,10 @@ def test_las_alternativas_con_ofertas_en_otros_productos(cliente):
         filas2["C3"] == "SEGUNDA CIA" and filas3["C3"] == "TERCERA CIA"
     )  # ahora C3 tiene 3 ofertas (ALFA $50 es la mejor)
     assert "C3" not in {f[1] for f in _tabla(wb["DINAMICA 4.º"], 4, 5)}
-    # las tres hojas de un puesto cuentan lo mismo
-    assert (
-        len(_tabla(wb["VALORES 2.º"], 2, 8))
-        == len(_tabla(wb["DINAMICA 2.º"], 4, 5))
-        == len(_tabla(wb["ORDENES 2.º"], 2, 8))
-        == 2
-    )
+    # las tres hojas de un puesto cuentan lo mismo (ORDENES suma una fila en blanco por proveedor, como OC.xlsm)
+    ordenes = _tabla(wb["ORDENES 2.º"], 2, 8)
+    assert len(_tabla(wb["VALORES 2.º"], 2, 8)) == len(_tabla(wb["DINAMICA 2.º"], 4, 5)) == 2
+    assert len([f for f in ordenes if f[0] != 0]) == 2 and len(ordenes) == 4
 
 
 def test_las_alternativas_sin_ofertas_suficientes_dejan_cada_hoja_con_solo_el_encabezado(cliente):
@@ -580,5 +590,5 @@ def test_un_libro_grande_se_arma_en_pocos_segundos():
     assert time.perf_counter() - t0 < 6, "la OC de 5.000 filas tardó demasiado"
     assert _revisar_estructura(contenido) == []
     o = openpyxl.load_workbook(io.BytesIO(contenido), data_only=True)["ORDENES"]
-    assert o.max_row == 5001 and o["G2"].value.endswith("& <ESPECIAL>")  # los caracteres especiales de XML sobreviven
-    assert abs(sum(o.cell(r, 22).value for r in range(2, 5002)) - sum(f[2] * f[3] for f in filas)) < 1e-3
+    assert o.max_row == 5001 + 90 and o["G2"].value.endswith("& <ESPECIAL>")  # 5.000 filas + 1 en blanco por cada uno de los 90 proveedores
+    assert abs(sum(o.cell(r, 22).value for r in range(2, o.max_row + 1)) - sum(f[2] * f[3] for f in filas)) < 1e-3

@@ -31,7 +31,7 @@ from xml.etree import ElementTree
 from xml.sax.saxutils import escape
 
 import openpyxl
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side, Color
 from openpyxl.styles.cell_style import StyleArray
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.merge import MergedCellRange
@@ -200,7 +200,15 @@ def _agrupar(filas: list[list], ind: dict[str, int]) -> list[list]:
         else:
             grupos[k][3] += f[ind["CANT_COMPRAR"]]
             grupos[k][4] = min(grupos[k][4], f[ind["VALOR"]])
-    return sorted(grupos.values(), key=lambda g: (g[0].lower(), g[2].lower(), str(g[1])))
+    ordenadas = sorted(grupos.values(), key=lambda g: (g[0].lower(), g[2].lower(), str(g[1])))
+    # Como en OC.xlsm: después de cada proveedor va UNA FILA EN BLANCO (None). En ORDENES esa fila da 0 (se oculta) y el ITEM
+    # vuelve a empezar en 1 con el proveedor siguiente.
+    con_separador: list = []
+    for i, g in enumerate(ordenadas):
+        con_separador.append(g)
+        if i + 1 == len(ordenadas) or ordenadas[i + 1][0] != g[0]:
+            con_separador.append(None)
+    return con_separador
 
 
 class _Hoja:
@@ -273,8 +281,12 @@ def _hoja_ordenes(filas: list[list], estilos: dict[int, int], resumen: str, desd
     """ORDENES: proveedor, ítem, código, descripción, cantidad, valor unitario, valor total (fórmula) e IVA (vacío, como en OC.xlsm).
     Cada celda lee de la hoja DINAMICA (cuyas filas empiezan en la 4), igual que el original."""
     xml, uniones = [], []
+    item = 0
     for i, g in enumerate(filas):
         r, d = 2 + i, desde + i
+        item = 0 if g is None else item + 1  # =IF(A<>0, anterior+1, 0): se reinicia en la fila en blanco de cada proveedor
+        if g is None:
+            g = (0, 0, 0, 0, 0)  # lo que da una referencia a una celda vacía de DINAMICA
         celdas = []
         for c in range(1, 27):
             s, ref = estilos[c], f"{_col(c)}{r}"
@@ -283,11 +295,11 @@ def _hoja_ordenes(filas: list[list], estilos: dict[int, int], resumen: str, desd
             elif c == 2:
                 celdas.append(
                     _c_formula(
-                        ref, s, "ROWS($A$2:A2)" if i == 0 else f"IF(A{r}<>0,B{r - 1}+1,((B{r - 1}-B{r - 1})))", i + 1
+                        ref, s, "ROWS($A$2:A2)" if i == 0 else f"IF(A{r}<>0,B{r - 1}+1,((B{r - 1}-B{r - 1})))", item
                     )
                 )
             elif c == 3:
-                celdas.append(_c_formula(ref, s, f"{resumen}!B{d}", str(g[1])))
+                celdas.append(_c_formula(ref, s, f"{resumen}!B{d}", g[1] if g[1] == 0 else str(g[1])))
             elif c == 7:
                 celdas.append(_c_formula(ref, s, f"{resumen}!C{d}", g[2]))
             elif c == 17:
@@ -305,8 +317,11 @@ def _hoja_ordenes(filas: list[list], estilos: dict[int, int], resumen: str, desd
 
 def _hoja_dinamica(filas: list[list], s_texto: int, s_miles: int) -> _Hoja:
     xml = []
-    for i, (empresa, cod, desc, cant, valor) in enumerate(filas):
+    for i, g in enumerate(filas):
         r = 4 + i
+        if g is None:  # la fila en blanco que separa un proveedor del siguiente
+            continue
+        empresa, cod, desc, cant, valor = g
         xml.append(
             _fila_xml(
                 r,
@@ -350,8 +365,8 @@ def _libro_oc(grupos: list[tuple[str, str, list[list]]], columnas: list[str]) ->
     wb = openpyxl.load_workbook(PLANTILLAS / "oc_base.xlsx")
     valores, dinamica, ordenes = wb["VALORES"], wb["DINAMICA"], wb["ORDENES"]
     # los formatos de la fila modelo de ORDENES (columna por columna), y la fila modelo se quita: sus celdas las escribe _hoja_ordenes
-    miles = {17, 19, 22}
-    estilos = {c: _estilo(wb, ordenes.cell(2, c)._style, _FORMATO_MILES if c in miles else None) for c in range(1, 27)}
+    # Como en OC.xlsm, los números van en formato «General» (sin separador de miles)
+    estilos = {c: _estilo(wb, ordenes.cell(2, c)._style) for c in range(1, 27)}
     for c in range(1, 27):
         ordenes._cells.pop((2, c), None)
     for m in [m for m in list(ordenes.merged_cells.ranges) if m.min_row >= 2]:
@@ -363,16 +378,14 @@ def _libro_oc(grupos: list[tuple[str, str, list[list]]], columnas: list[str]) ->
             del hoja.row_dimensions[fila]
     for c, nombre in enumerate(columnas, 1):
         valores.cell(1, c).value = nombre
-    for c in range(1, 6):  # encabezado de DINAMICA (antes lo dibujaba la tabla dinámica)
-        celda = dinamica.cell(3, c)
-        celda.font, celda.fill, celda.alignment, celda.border = (
-            _ESTILO_ENCABEZADO["font"],
-            _ESTILO_ENCABEZADO["fill"],
-            _ESTILO_ENCABEZADO["alignment"],
-            _BORDE,
-        )
-    dinamica.column_dimensions["C"].width = 70
-    s_texto, s_miles = _estilo(wb, None), _estilo(wb, None, _FORMATO_MILES)
+    dinamica.column_dimensions["C"].width = 121.4  # el mismo ancho de OC.xlsm (descripciones largas en una línea)
+    s_texto = _estilo(wb, None)
+    s_miles = s_texto  # «General», como OC.xlsm
+    # VALORES: los datos en Calibri 10, como OC.xlsm (DINAMICA y ORDENES van en 11)
+    molde = valores.cell(row=1, column=40)
+    molde.font = Font(name="Calibri", size=10, color=Color(theme=1))  # el color de texto del tema, igual que OC.xlsm
+    s_valores = _estilo(wb, molde._style)
+    del valores._cells[(1, 40)]
     ind = {n: i for i, n in enumerate(columnas)}
     varios = len(grupos) > 1 or grupos[0][0] != ""
     inyecciones: dict[str, _Hoja] = {}
@@ -383,7 +396,7 @@ def _libro_oc(grupos: list[tuple[str, str, list[list]]], columnas: list[str]) ->
         v.title, d.title, o.title = f"VALORES{sufijo}", f"DINAMICA{sufijo}", f"ORDENES{sufijo}"
         o["A1"].value = encabezado_empresa
         resumen = _agrupar(filas, ind)
-        inyecciones[v.title] = _hoja_valores(filas, s_texto, s_miles)
+        inyecciones[v.title] = _hoja_valores(filas, s_valores, s_valores)
         inyecciones[d.title] = _hoja_dinamica(resumen, s_texto, s_miles)
         inyecciones[o.title] = _hoja_ordenes(resumen, estilos, f"'{d.title}'" if sufijo else d.title)
     if varios:
