@@ -20,7 +20,8 @@ from . import ranking as rk
 from .tablero import construir_tablero, ofertas_por_producto
 from .tablero import para_proveedor as tablero_para_proveedor
 
-# Encabezados exactamente como en OC.xlsm (incluido «STOCK MAXIMO» con espacio).
+# Encabezados exactamente como en la hoja VALORES de OC.xlsm. La última columna es la PRESENTACION de la oferta ganadora
+# (antes era «STOCK MAXIMO»).
 COLUMNAS = [
     "COD_PRODUCTO",
     "DESCRIPCION",
@@ -29,7 +30,7 @@ COLUMNAS = [
     "COD_EMPRESA",
     "NOM_EMPRESA",
     "EXISTENCIAS",
-    "STOCK MAXIMO",
+    "PRESENTACION",
 ]
 
 
@@ -50,7 +51,7 @@ def filas_valores(con: sqlite3.Connection) -> list[list]:
                     e["cod_empresa"],
                     e["empresa"],
                     i["existencias"],
-                    i["stock_max"],
+                    e["presentacion"],  # la presentación que ofreció ESE proveedor
                 ]
             )
     filas.sort(key=lambda f: (f[5].lower(), f[0]))  # f[5] = nombre del proveedor, f[0] = código
@@ -197,7 +198,7 @@ def filas_por_puesto(con: sqlite3.Connection) -> dict[int, list[list]]:
                         o["cod_empresa"],
                         o["empresa"],
                         i["existencias"],
-                        i["stock_max"],
+                        o["presentacion"],  # la presentación que ofreció ese proveedor alternativo
                     ]
                 )
     for filas in salida.values():

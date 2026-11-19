@@ -362,10 +362,12 @@ COLUMNAS = [
     "COD_EMPRESA",
     "NOM_EMPRESA",
     "EXISTENCIAS",
-    "STOCK MAXIMO",
+    "PRESENTACION",
 ]
 # puestos 2, 3 y 4 de A1 (BETA es el 1.º): GAMA $95 (empresa 3) · ALFA $100 (empresa 1) · DELTA $120 (empresa 4)
 PUESTOS = {2: ("GAMA LTDA", "3", 95), 3: ("ALFA SAS", "1", 100), 4: ("DELTA SA", "4", 120)}
+# la PRESENTACION que ofreció cada uno para A1 (última columna de VALORES): solo ALFA la escribió
+PRESENTACION_A1 = {"3": None, "1": "X10", "4": None}
 
 
 def _alternativas(c, calculado=False):
@@ -391,7 +393,7 @@ def test_cada_puesto_trae_sus_VALORES_DINAMICA_y_ORDENES_como_la_primera_oc(clie
         # VALORES: las 8 columnas de OC.xlsm; solo A1 tiene tantas ofertas (C3 y 0041 tienen una sola)
         assert _tabla(wb["VALORES" + suf], 1, 8) == [
             COLUMNAS,
-            ["A1", "ALFA PRODUCTO", 80, valor, cod_empresa, empresa, 20, 100],
+            ["A1", "ALFA PRODUCTO", 80, valor, cod_empresa, empresa, 20, PRESENTACION_A1[cod_empresa]],  # última: PRESENTACION
         ], puesto
         # DINAMICA: encabezado en la fila 3, una fila por proveedor y producto
         din = _tabla(wb["DINAMICA" + suf], 3, 5)
@@ -558,7 +560,7 @@ def test_un_libro_grande_se_arma_en_pocos_segundos():
         "COD_EMPRESA",
         "NOM_EMPRESA",
         "EXISTENCIAS",
-        "STOCK MAXIMO",
+        "PRESENTACION",
     ]
     filas = [
         [

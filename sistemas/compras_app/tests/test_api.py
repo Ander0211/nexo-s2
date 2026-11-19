@@ -167,11 +167,11 @@ def test_la_hoja_valores_de_la_oc_tiene_el_formato_de_oc_xlsm(cliente):
         "COD_EMPRESA",
         "NOM_EMPRESA",
         "EXISTENCIAS",
-        "STOCK MAXIMO",
+        "PRESENTACION",  # antes «STOCK MAXIMO»: ahora la presentación de la oferta ganadora
     ]
     cuerpo = {f[0]: f for f in filas[1:]}
     assert set(cuerpo) == {"A1", "C3", "0041"}  # D4 no tiene oferta -> no se exporta
-    assert cuerpo["A1"][2:6] == (80, 100, "1", "ALFA SAS") and cuerpo["A1"][6:] == (20, 100)
+    assert cuerpo["A1"][2:6] == (80, 100, "1", "ALFA SAS") and cuerpo["A1"][6:] == (20, "X10")  # existencias y PRESENTACION de ALFA
     assert isinstance(cuerpo["0041"][0], str)  # el código conserva el cero
 
 
