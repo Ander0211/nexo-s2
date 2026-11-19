@@ -587,9 +587,10 @@ _POLITICA_TEXTO = [
     ("GET", r"/api/exportar/oc", EDITORES),
     ("GET", r"/api/exportar/alternativas", EDITORES),
     # --- «Adicionales»: código y descripción → Proveedor 1, 2 y 3 con su menor valor ---
-    ("GET", r"/api/adicionales(/excel|/plantilla)?", INTERNOS),
-    ("POST", r"/api/adicionales(/archivo|/\d+/activo)?", EDITORES),
-    ("DELETE", r"/api/adicionales(/\d+)?", EDITORES),
+    # Solo el ADMINISTRADOR ve y usa «Adicionales» (ni Prime ni Consulta ni el proveedor)
+    ("GET", r"/api/adicionales(/excel|/plantilla)?", SOLO_ADMIN),
+    ("POST", r"/api/adicionales(/archivo|/\d+/activo)?", SOLO_ADMIN),
+    ("DELETE", r"/api/adicionales(/\d+)?", SOLO_ADMIN),
     # --- «Actualizar Excel»: importar y ver cuántas filas tiene cada tabla (administrador y prime) ---
     ("GET", r"/api/admin/tablas", EDITORES),
     ("POST", r"/api/admin/importar", EDITORES),

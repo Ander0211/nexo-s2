@@ -9,7 +9,7 @@ RUTAS DE «ADICIONALES»: código y descripción de productos → Proveedor 1, 2
     DELETE /api/adicionales             vaciar la lista
     GET    /api/adicionales/excel       descargar la lista con los proveedores
     GET    /api/adicionales/plantilla   Excel vacío con las columnas CÓDIGO y DESCRIPCIÓN
-La lógica está en services/adicionales.py. Ver: administrador, prime y consulta. Cambiar la lista: administrador y prime.
+La lógica está en services/adicionales.py. Solo el ADMINISTRADOR ve y usa «Adicionales».
 """
 
 import sqlite3

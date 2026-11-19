@@ -8,7 +8,7 @@ CÓMO SE USA
      Funciona igual que si lo hubiera abierto solo (SUMIPABON pide su usuario y clave como siempre).
   SUMIPABON → Usuarios: cada usuario tiene el botón "Desactivar" (no puede entrar, conserva sus datos) y
   "Activar" para devolverle el acceso, igual que en SENTINEL.
-  SUMIPABON → Adicionales (menú): suba un Excel con CÓDIGO y DESCRIPCIÓN (botón "Plantilla" para el formato),
+  SUMIPABON → Adicionales (menú, solo el ADMINISTRADOR la ve): suba un Excel con CÓDIGO y DESCRIPCIÓN (botón "Plantilla" para el formato),
   pegue filas copiadas de Excel o escríbalas a mano, y vea el Proveedor 1, 2 y 3 con su menor valor ofertado.
   "Descargar" baja la lista con esos proveedores en Excel. Es solo de consulta: no cambia el tablero ni la OC.
   4. Para volver al portal: botón "Volver a Nexo S²" (en SUMIPABON debajo de "Ingresar" y en la barra azul;

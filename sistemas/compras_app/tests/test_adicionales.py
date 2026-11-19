@@ -60,10 +60,13 @@ def test_descargar_excel_con_proveedor_1_2_3(cliente):
 def test_quitar_vaciar_y_permisos(cliente, como):
     d = cliente.post("/api/adicionales", json={"filas": [{"cod": "X1"}, {"cod": "X2"}]}).json()
     assert cliente.delete(f"/api/adicionales/{d['items'][0]['id']}").json()["total"] == 1
-    consulta = como("consulta")
-    assert consulta.get("/api/adicionales").status_code == 200  # consulta ve
-    assert consulta.post("/api/adicionales", json={"filas": [{"cod": "X9"}]}).status_code == 403  # pero no cambia
-    assert como("prime").post("/api/adicionales", json={"filas": [{"cod": "X9"}]}).status_code == 200
+    # solo el administrador: Prime, Consulta y el proveedor no ven ni usan «Adicionales»
+    for rol in ("prime", "consulta", "externo"):
+        otro = como(rol)
+        assert otro.get("/api/adicionales").status_code == 403, rol
+        assert otro.get("/api/adicionales/excel").status_code == 403, rol
+        assert otro.post("/api/adicionales", json={"filas": [{"cod": "X9"}]}).status_code == 403, rol
+        assert otro.post(f"/api/adicionales/{d['items'][1]['id']}/activo", json={"activo": False}).status_code == 403, rol
     assert cliente.delete("/api/adicionales").json()["total"] == 0
 
 

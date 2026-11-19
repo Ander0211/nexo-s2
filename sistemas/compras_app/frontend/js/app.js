@@ -588,8 +588,8 @@ const PANTALLAS = { inicio: 'Bienvenida', tablero: 'Tablero de compras', control
 /** Qué pantallas puede ver cada perfil (la primera es la de por defecto). Es solo comodidad: el servidor revisa cada petición. */
 const PANTALLAS_POR_PERFIL = {
   admin: ['inicio', 'tablero', 'control', 'adicionales', 'admin', 'usuarios', 'proveedor'], // el administrador también ve la pantalla del proveedor
-  prime: ['inicio', 'tablero', 'control', 'adicionales'],
-  consulta: ['inicio', 'tablero', 'control', 'adicionales'],
+  prime: ['inicio', 'tablero', 'control'],
+  consulta: ['inicio', 'tablero', 'control'], // «Adicionales» es solo del administrador
   externo: ['proveedor'],
 };
 

@@ -82,7 +82,7 @@
     <nav class="menu-lista">
       <a class="menu-item" id="menu-tablero" data-roles="admin prime consulta" href="#tablero" data-pantalla="tablero"><span data-icono="cesta" data-tam="18"></span><span class="txt">Tablero de compras</span></a>
       <a class="menu-item" id="menu-control" data-roles="admin prime consulta" href="#control" data-pantalla="control" title="Empresas con menores valores, precios más baratos y productos que más consumen"><span data-icono="grafico" data-tam="18"></span><span class="txt">Tableros de control</span></a>
-      <a class="menu-item" id="menu-adicionales" data-roles="admin prime consulta" href="#adicionales" data-pantalla="adicionales" title="Sube código y descripción de productos y ve el Proveedor 1, 2 y 3 con su menor valor"><span data-icono="comparar" data-tam="18"></span><span class="txt">Adicionales</span></a>
+      <a class="menu-item" id="menu-adicionales" data-roles="admin" href="#adicionales" data-pantalla="adicionales" title="Sube código y descripción de productos y ve el Proveedor 1, 2 y 3 con su menor valor"><span data-icono="comparar" data-tam="18"></span><span class="txt">Adicionales</span></a>
       <a class="menu-item" id="menu-admin" data-roles="admin" href="#admin" data-pantalla="admin" title="Ver, editar, agregar y eliminar las tablas de tus Excel"><span data-icono="tabla" data-tam="18"></span><span class="txt">Administración</span></a>
       <a class="menu-item" id="menu-usuarios" data-roles="admin" href="#usuarios" data-pantalla="usuarios" title="Crear usuarios y darles un perfil"><span data-icono="usuarios" data-tam="18"></span><span class="txt">Usuarios</span></a>
       <a class="menu-item" id="menu-proveedor" data-roles="externo admin" href="#proveedor" data-pantalla="proveedor" title="Los productos que la Clínica necesita comprar"><span data-icono="cesta" data-tam="18"></span><span class="txt">Productos que necesitamos</span></a>
@@ -232,7 +232,7 @@
           <div><h1>Adicionales</h1><p>Productos por <b>código</b> y <b>descripción</b> con el <b>Proveedor 1, 2 y 3</b> y su <b>menor valor ofertado</b>. Es libre: también muestra ofertas que el tablero no toma (marcadas <span class="adi-libre">Fuera del tablero</span>), sin cambiar el tablero ni la orden de compra.</p></div>
         </div>
         <div class="adi-barra-botones" role="toolbar" aria-label="Acciones de adicionales">
-          <div class="adi-grupo" data-roles="admin prime">
+          <div class="adi-grupo" data-roles="admin">
             <button class="btn btn-primario" id="adi-agregar" type="button"><span data-icono="mas" data-tam="16"></span>Agregar</button>
             <label class="btn btn-fantasma"><span data-icono="subir" data-tam="16"></span>Subir Excel<input type="file" id="adi-archivo" accept=".xlsx,.xlsm,.csv" hidden></label>
             <a class="btn btn-fantasma" href="/api/adicionales/plantilla" download data-descarga="la plantilla"><span data-icono="archivo" data-tam="16"></span>Plantilla</a>
