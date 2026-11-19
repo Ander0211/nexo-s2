@@ -329,7 +329,10 @@ def test_dinamica_deja_una_fila_en_blanco_por_proveedor_y_el_item_se_reinicia(cl
         ["ALFA SAS", "0041"], ["ALFA SAS", "C3"], [None, None], ["BETA SAS", "A1"], [None, None]]
     assert [o.cell(r, 2).value for r in range(2, 7)] == [1, 2, 0, 1, 0]  # ITEM: 1, 2 · (separador) · 1 · (separador)
     assert [o.cell(r, 1).value for r in range(2, 7)] == ["ALFA SAS", "ALFA SAS", 0, "BETA SAS", 0]
-    assert d.column_dimensions["C"].width > 100 and not d["A3"].font.b  # descripción ancha y encabezado como lo deja la tabla dinámica
+    assert d.column_dimensions["C"].width > 100  # descripción ancha, como OC.xlsm
+    # encabezado como lo muestra la tabla dinámica de OC.xlsm: azul (énfasis 1 del tema) con letra blanca en negrita
+    for c in ("A3", "B3", "C3", "D3", "E3"):
+        assert d[c].font.b and d[c].font.color.theme == 0 and d[c].fill.fgColor.theme == 4
 
 
 def test_la_oc_respeta_el_proveedor_elegido_a_mano_y_la_cantidad_editada(cliente):

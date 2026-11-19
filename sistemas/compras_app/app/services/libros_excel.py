@@ -379,6 +379,12 @@ def _libro_oc(grupos: list[tuple[str, str, list[list]]], columnas: list[str]) ->
     for c, nombre in enumerate(columnas, 1):
         valores.cell(1, c).value = nombre
     dinamica.column_dimensions["C"].width = 121.4  # el mismo ancho de OC.xlsm (descripciones largas en una línea)
+    # Encabezado de DINAMICA como lo muestra la tabla dinámica de OC.xlsm (estilo «PivotStyleMedium9»): franja del color de
+    # énfasis 1 del tema (azul) con letra blanca en negrita.
+    for c in range(1, 6):
+        celda = dinamica.cell(3, c)
+        celda.font = Font(name="Calibri", size=11, bold=True, color=Color(theme=0))
+        celda.fill = PatternFill("solid", fgColor=Color(theme=4))
     s_texto = _estilo(wb, None)
     s_miles = s_texto  # «General», como OC.xlsm
     # VALORES: los datos en Calibri 10, como OC.xlsm (DINAMICA y ORDENES van en 11)
