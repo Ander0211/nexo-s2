@@ -582,6 +582,104 @@ function donut(pct, color) {
   </svg>`;
 }
 
+let ENLACES = [
+  { id: "copias10", ip: "172.168.100.10", estado: "try", label: "copias", ruta: "\\\\172.168.100.10\\copias" },
+  { id: "backup100", ip: "172.168.10.100", estado: "try", label: "BACKUP_SERVER Z:", ruta: "\\\\172.168.10.100\\backup_server" },
+  { id: "saludips", ip: "192.168.200.50", estado: "try", label: "backup_saludips\\2026", ruta: "\\\\192.168.200.50\\backup_saludips\\2026" }
+];
+function semaforoRed() {
+  const sts = ENLACES.map((e) => e.estado);
+  const nOk = sts.filter((s) => s === "ok").length;
+  const nTry = sts.filter((s) => s === "try").length;
+  const nOff = sts.filter((s) => s === "off").length;
+  if (nOk === sts.length && sts.length) return "g";
+  if (nOff === sts.length) return "r";
+  if (nTry && !nOff && !nOk) return "y";
+  if (nOk && nOff) return "y";
+  if (nTry) return "y";
+  return "r";
+}
+function htmlSemaforoH() {
+  const txt = { ok: "conectado", try: "intentando", off: "no conectado" };
+  const filas = ENLACES.map((e) => {
+    const st = e.estado === "ok" ? "g" : e.estado === "off" ? "r" : "y";
+    const lamps = ["r", "y", "g"].map((c) => `<span class="lamp ${c}${st === c ? " on" : ""}"></span>`).join("");
+    return `<div class="sema-row" role="button" tabindex="0" data-exp="${esc(e.id)}" title="${esc(txt[e.estado] || txt.try)} · Ver contenido de ${esc(e.ruta || e.ip)}">
+      <div class="sema-lamps">${lamps}</div>
+      <div class="sema-dir"><b>${esc(e.ip)}</b><span>${esc(e.label || "")}</span></div>
+    </div>`;
+  }).join("");
+  return `<div class="sema-h">${filas}</div>`;
+}
+function pintarEnlaces(list) {
+  if (Array.isArray(list) && list.length) ENLACES = list;
+  $$(".sema-slot").forEach((el) => { el.innerHTML = htmlSemaforoH(); });
+}
+function pollEnlaces() {
+  fetch("/api/enlaces").then((r) => r.json()).then((j) => {
+    pintarEnlaces(j.enlaces || []);
+  }).catch(() => {});
+}
+function floatWinEl() {
+  let w = $("#floatWin");
+  if (w) return w;
+  w = document.createElement("div");
+  w.id = "floatWin";
+  w.className = "float-win";
+  w.innerHTML = `<div class="float-hd" id="floatHd"><span id="floatTit"></span><button type="button" class="float-x" id="floatX">×</button></div><div class="float-bd" id="floatBd"></div>`;
+  document.body.appendChild(w);
+  const hd = $("#floatHd");
+  let drag = false, sx = 0, sy = 0, sl = 0, st = 0;
+  // «pointer» sirve para ratón y para el dedo (teléfonos y tabletas)
+  hd.addEventListener("pointerdown", (ev) => {
+    if (ev.target.id === "floatX") return;
+    drag = true;
+    hd.setPointerCapture?.(ev.pointerId);
+    sx = ev.clientX; sy = ev.clientY;
+    const r = w.getBoundingClientRect();
+    sl = r.left; st = r.top;
+    ev.preventDefault();
+  });
+  document.addEventListener("pointermove", (ev) => {
+    if (!drag) return;
+    w.style.left = Math.max(8, sl + ev.clientX - sx) + "px";
+    w.style.top = Math.max(8, st + ev.clientY - sy) + "px";
+    w.style.right = "auto";
+  });
+  document.addEventListener("pointerup", () => { drag = false; });
+  $("#floatX").onclick = () => { w.style.display = "none"; };
+  return w;
+}
+function abrirExplorar(id, sub) {
+  const w = floatWinEl();
+  w.style.display = "flex";
+  if (!w.style.left) {
+    // en el teléfono la ventana va centrada; en el computador, a la derecha del semáforo
+    w.style.left = window.innerWidth < 700 ? "4vw" : "42%";
+    w.style.top = "18%";
+  }
+  $("#floatTit").textContent = "Cargando…";
+  $("#floatBd").innerHTML = `<p class="muted">Leyendo la carpeta…</p>`;
+  const q = "/api/explorar?id=" + encodeURIComponent(id) + (sub ? "&sub=" + encodeURIComponent(sub) : "");
+  fetch(q).then((r) => r.json()).then((j) => {
+    $("#floatTit").textContent = (j.ip || id) + (j.sub ? " · " + j.sub : "");
+    if (!j.ok) {
+      $("#floatBd").innerHTML = `<p class="delta down">${esc(j.error || "No se alcanza")}</p><p class="tiny muted">${esc(j.ruta || "")}</p>`;
+      return;
+    }
+    const filas = (j.items || []).map((it) => {
+      if (it.dir) {
+        const nxt = (j.sub ? j.sub + "\\" : "") + it.name;
+        return `<div class="exp-row dir" data-exp="${esc(j.id)}" data-exp-sub="${esc(nxt)}">📁 ${esc(it.name)}</div>`;
+      }
+      return `<div class="exp-row ${it.bak ? "bak" : ""}">${it.bak ? "🗄" : "📄"} ${esc(it.name)}</div>`;
+    }).join("");
+    $("#floatBd").innerHTML = `<p class="tiny muted">${esc(j.ruta || "")} · ${j.n || 0}</p>${filas || "<p class='muted'>Carpeta vacía o sin permiso.</p>"}`;
+  }).catch((err) => {
+    $("#floatBd").innerHTML = `<p class="delta down">${esc(err.message || "Error")}</p>`;
+  });
+}
+
 function go(id) {
   if (state.simple && !SIMPLE_IDS.has(id)) state.simple = false;
   state.view = id;
@@ -848,7 +946,7 @@ function viewMando() {
   const verdes = stats.filter((s) => semaforo(s) === "g").length;
   $("#view").innerHTML = `
     ${htmlAniosBar()}
-<div class="grid g-4" style="margin-bottom:14px">
+<div class="mando-kpis" style="margin-bottom:14px">
       <div class="card kpi go" data-go="bitacora" title="Abrir inventario de copias">
         <div class="lbl">Copias en el inventario</div>
         <div class="val">${D.total.toLocaleString("es-CO")}</div>
@@ -869,10 +967,13 @@ function viewMando() {
 
       </div>
       <div class="card kpi go" data-go="cadencia" title="Abrir calendario de cadencia">
-        <div class="lbl">Hueco 2026 más largo</div>
+        <div class="lbl">Hueco ${cad.y} más largo</div>
         <div class="val">${hueco.dias}<span style="font-size:14px"> d</span></div>
         <div class="delta down">${fmtDate(hueco.desde)} – ${fmtDate(hueco.hasta)}</div>
-
+      </div>
+      <div class="card kpi sema-card">
+        <div class="lbl">Red · 3 direcciones</div>
+        <div class="sema-slot">${htmlSemaforoH()}</div>
       </div>
     </div>
     <div class="grid g-23">
@@ -1114,7 +1215,7 @@ function viewExcelUp() {
       <h3>Ruta automática</h3>
       <div class="filters" style="margin:10px 0">
         <input id="fruta" style="flex:1;min-width:240px" placeholder="C:\\Users\\Db Developer\\Documents\\SENTINEL">
-        <input id="fcopias" style="flex:1;min-width:240px" placeholder="\\\\172.168.100.10\\copias;\\\\172.168.10.100">
+        <input id="fcopias" style="flex:1;min-width:240px" placeholder="\\\\172.168.100.10\\copias;\\\\172.168.10.100\\backup_server;\\\\192.168.200.50\\backup_saludips\\2026">
         <select id="fint">
           <option value="15">cada 15 s</option>
           <option value="30" selected>cada 30 s</option>
@@ -1148,7 +1249,7 @@ function viewExcelUp() {
   const aplicar = async (extra) => {
     const body = Object.assign({
       ruta: $("#fruta").value.trim(),
-      copias: ($("#fcopias") && $("#fcopias").value.trim()) || "\\\\172.168.100.10\\copias;\\\\172.168.10.100",
+      copias: ($("#fcopias") && $("#fcopias").value.trim()) || "\\\\172.168.100.10\\copias;\\\\172.168.10.100\\backup_server;\\\\192.168.200.50\\backup_saludips\\2026",
       intervalo: +$("#fint").value
     }, extra || {});
     const r = await fetch("/api/fuente", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -2147,7 +2248,7 @@ function showAyuda() {
     { id: "sla", t: "Cumplimiento", d: "Porcentaje de días del año (hasta el último del Excel) que tienen al menos una copia.", e: ((A.cal2026 && A.cal2026.diasConBak) || 0) + " de " + ((A.cal2026 && A.cal2026.diasCalendario) || 0) + " días" },
     { id: "ficha", t: "Ficha", d: "Historial de un sistema: primer y último archivo, pesos, años. Se abre pulsando el nombre.", e: "Ejemplo: " + (ACTIVE[0] || D.sistemas[0] || "SIFacturacion") },
     { id: "verif", t: "Verificaciones", d: "Hoja del Excel donde quedan las actas del turno. Es distinta de la lista de .bak.", e: state.extra.length + " filas en este equipo" },
-    { id: "red", t: "Carpeta de red", d: "Donde aparecen las copias nuevas. SENTINEL las suma al Excel si no estaban.", e: "\\\\172.168.100.10\\copias · \\\\172.168.10.100" },
+    { id: "red", t: "Carpeta de red", d: "Donde aparecen las copias nuevas. SENTINEL las suma al Excel si no estaban. No es VNC.", e: "\\\\172.168.100.10\\copias" },
     { id: "rto", t: "RTO / Resultado", d: "El inventario no dice si el job salió bien. Eso solo existe cuando alguien pulsa ENVIAR.", e: "No se rellena solo desde el .bak" }
   ];
   const pasos = [
@@ -2158,7 +2259,7 @@ function showAyuda() {
     { t: "Semáforos", p: "Verde = hay .bak el " + fmtDate(D.hasta) + ". Amarillo = el sistema sigue, pero no ese día. Rojo = sin copia desde 2022 (" + STOPPED.join(", ") + ")." },
     { t: "El día", p: "En Verificación del día se cuentan los .bak de esa fecha. 10 = Exitoso, 1 a 9 = Parcial, 0 = Fallido. No se parte por sistema." },
     { t: "Formato", p: "El formato institucional es por sistema (SIFacturacion, SCAlmacen…). El resultado lo elige usted. ENVIAR lo guarda en Verificaciones." },
-    { t: "Excel y red", p: "Inventario en Documentos\\SENTINEL. Copias nuevas en \\\\172.168.100.10\\copias y \\\\172.168.10.100. Hay que abrir SENTINEL con iniciar-SENTINEL.bat (http://localhost:8080)." },
+    { t: "Excel y red", p: "Inventario en Documentos\\SENTINEL. Copias en \\\\172.168.100.10\\copias y \\\\192.168.200.50\\backup_saludips\\2026. BACKUP_SERVER es 172.168.10.100 (ping / VNC Viewer). Hay que abrir SENTINEL con iniciar-SENTINEL.bat (http://localhost:8080)." },
     { t: "Listo", p: "Pruebe las otras pestañas: Palabras, Colores, El día, Mapa y Práctica. Pulse un nombre de menú para ir ahí." }
   ];
   const quiz = [
@@ -2360,6 +2461,12 @@ function init() {
   pullExcel();
   document.addEventListener("click", (e) => {
     if (e.target.closest("#modal")) return;
+    const exp = e.target.closest("[data-exp]");
+    if (exp && exp.dataset.exp) {
+      e.preventDefault();
+      abrirExplorar(exp.dataset.exp, exp.dataset.expSub || "");
+      return;
+    }
     const yb = e.target.closest("[data-nav-year]");
     if (yb && yb.dataset.navYear) {
       e.preventDefault();
@@ -2406,6 +2513,13 @@ function init() {
   if (splash) setTimeout(afterSplash, 1200);
   else afterSplash();
   arranqueInventario();
+  pollEnlaces();
+  setInterval(pollEnlaces, 4000);
+  // Teclado: Enter o espacio sobre una dirección del semáforo abre su carpeta
+  document.addEventListener("keydown", (ev) => {
+    const fila = ev.target.closest && ev.target.closest(".sema-row[data-exp]");
+    if (fila && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); abrirExplorar(fila.dataset.exp, ""); }
+  });
 }
 
 function arranqueInventario() {

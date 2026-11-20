@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from openpyxl.cell.cell import MergedCell
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse, quote
+from urllib.parse import urlparse, quote, parse_qs
 from http.cookies import SimpleCookie
 
 import openpyxl
@@ -35,9 +35,22 @@ CFG_PATH = ROOT / "config.json"
 HOME = Path.home().resolve()
 WIN_FUENTE = r"C:\Users\Db Developer\Documents\SENTINEL"
 COPIAS_UNC = r"\\172.168.100.10\copias"
-COPIAS_UNC_2 = r"\\172.168.10.100"
-COPIAS_UNCS = [COPIAS_UNC, COPIAS_UNC_2]
-COPIAS_TXT = r"\\172.168.100.10\copias;\\172.168.10.100"
+SALUDIPS_UNC = r"\\192.168.200.50\backup_saludips\2026"
+BACKUP_HOST = "172.168.10.100"
+BACKUP_SHARE = "backup_server"
+BACKUP_UNC = r"\\172.168.10.100\backup_server"
+BACKUP_ANIOS = ("2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026")
+COPIAS_UNCS = [COPIAS_UNC, SALUDIPS_UNC, BACKUP_UNC]
+COPIAS_TXT = ";".join(COPIAS_UNCS)
+ENLACES = [
+    {"id": "copias10", "ip": "172.168.100.10", "tipo": "smb", "ruta": COPIAS_UNC, "label": "copias"},
+    {"id": "backup100", "ip": BACKUP_HOST, "tipo": "backup", "ruta": BACKUP_UNC, "puerto": 5900, "label": "BACKUP_SERVER"},
+    {"id": "saludips", "ip": "192.168.200.50", "tipo": "smb", "ruta": SALUDIPS_UNC, "label": "backup_saludips\\2026"},
+]
+ENLACE_LOCK = threading.Lock()
+ENLACE_STATE = {
+    e["id"]: {"estado": "try", "detalle": "intentando conectar"} for e in ENLACES
+}
 SHEET = "Verificaciones"
 DIAS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 MESES_ES = {
@@ -85,7 +98,7 @@ def ruta_permitida(path: Path) -> bool:
     win_n = WIN_FUENTE.replace("\\", "/").lower()
     if n == win_n or n.startswith(win_n + "/"):
         return True
-    if n.startswith("//") or "172.168.100.10" in n or "172.168.10.100" in n or n.rstrip("/").endswith("/copias"):
+    if n.startswith("//") or "172.168.100.10" in n or "172.168.10.100" in n or "192.168.200.50" in n or n.rstrip("/").endswith("/copias") or "backup_saludips" in n:
         return True
     return False
 
@@ -207,13 +220,20 @@ def shares_de_host(host: str) -> list[str]:
         names = []
         for line in (r.stdout or "").splitlines():
             parts = line.split()
-            if len(parts) >= 2 and parts[1].lower() == "disk":
+            if len(parts) >= 2 and parts[1].lower().rstrip(":") in ("disk", "disco"):
                 n = parts[0]
                 if n.upper() not in skip:
                     names.append(n)
         return names
     except Exception:
         return []
+
+
+def _unc_win(host: str, share: str, rest: str = "") -> str:
+    u = "\\\\" + host + "\\" + share
+    if rest:
+        u += "\\" + rest
+    return u
 
 
 def formas_copias(raw: str) -> list[str]:
@@ -224,19 +244,46 @@ def formas_copias(raw: str) -> list[str]:
     if not parts:
         parts = ["172.168.100.10", "copias"]
     host = parts[0]
+    nt = os.name == "nt"
+
+    def add(unc: str):
+        out.append(unc)
+        if not unc.endswith("\\"):
+            out.append(unc + "\\")
+        if not nt:
+            out.append(unc.replace("\\", "/"))
+
     if len(parts) == 1:
-        shares = ["copias"] + shares_de_host(host)
-        for sh in list(dict.fromkeys(shares)):
-            unc = "\\\\" + host + "\\" + sh
-            out.extend([unc, unc + "\\", unc.replace("\\", "/")])
+        vistos = shares_de_host(host)
+        extra = ["copias"]
+        if host == BACKUP_HOST:
+            extra = [BACKUP_SHARE, "copias"]
+        shares = list(dict.fromkeys(vistos + extra))
+        for sh in shares:
+            add(_unc_win(host, sh))
+        if host == BACKUP_HOST:
+            for p in (r"Z:\\", "Z:"):
+                try:
+                    if os.path.isdir(p):
+                        out.append(p)
+                except OSError:
+                    pass
         return list(dict.fromkeys(out))
     host, share = parts[0], parts[1]
     rest = "\\".join(parts[2:])
     for sh in (share, share.lower(), share.upper(), share.capitalize()):
-        unc = "\\\\" + host + "\\" + sh
-        if rest:
-            unc += "\\" + rest
-        out.extend([unc, unc + "\\", unc.replace("\\", "/")])
+        add(_unc_win(host, sh, rest))
+    if host == BACKUP_HOST:
+        for p in (r"Z:\\", "Z:"):
+            try:
+                if os.path.isdir(p):
+                    out.append(p)
+                    if rest:
+                        zp = "Z:\\" + rest
+                        if os.path.isdir(zp):
+                            out.append(zp)
+            except OSError:
+                pass
     return list(dict.fromkeys(out))
 
 
@@ -245,11 +292,46 @@ def asegurar_sesion_unc(raw: str):
         return
     try:
         import subprocess
-        tgt = formas_copias(raw)[0]
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        subprocess.run(["net", "use", tgt], timeout=12, capture_output=True, creationflags=flags)
+        s = (raw or "").replace("/", "\\")
+        parts = [p for p in s.split("\\") if p]
+        if not parts:
+            return
+        host = parts[0]
+        cmds = [["net", "use", "\\\\" + host + "\\IPC$"]]
+        for cand in formas_copias(raw)[:6]:
+            if "/" in cand:
+                continue
+            cmds.append(["net", "use", cand.rstrip("\\")])
+        for cmd in cmds:
+            subprocess.run(cmd, timeout=12, capture_output=True, creationflags=flags)
     except Exception:
         pass
+
+
+def _err_unc(e: BaseException) -> str:
+    win = getattr(e, "winerror", None) or getattr(e, "errno", None)
+    if win == 50:
+        return "Windows no abre esa ruta con /. Tiene que ser \\\\IP\\carpeta (Explorador → iniciar sesión)."
+    if win in (53, 64, 51):
+        return "No hay recurso de archivos en esa IP, o el nombre de carpeta no existe."
+    if win in (5, 1326, 86, 1219):
+        return "Falta iniciar sesión. Abra \\\\IP en el Explorador, ponga usuario y contraseña, deje SENTINEL abierto."
+    if win == 67:
+        return "Esa carpeta compartida no existe. En el Explorador abra \\\\IP y copie el nombre exacto (no asuma \\copias)."
+    if win == 3:
+        return "Ruta no encontrada. Use \\\\IP\\carpeta (no la letra Z:)."
+    return str(e)
+
+
+def _marcar_enlace(raw: str, estado: str, detalle: str):
+    raw_l = (raw or "").replace("/", "\\").lower()
+    for e in ENLACES:
+        ip = (e.get("ip") or "").lower()
+        rt = (e.get("ruta") or "").replace("/", "\\").lower()
+        if (ip and ip in raw_l) or (rt and (rt in raw_l or raw_l in rt)):
+            with ENLACE_LOCK:
+                ENLACE_STATE[e["id"]] = {"estado": estado, "detalle": str(detalle or "")[:220], "t": time.time()}
 
 
 def abrir_copias(raw: str, segundos=25) -> str:
@@ -264,12 +346,25 @@ def abrir_copias(raw: str, segundos=25) -> str:
         for cand in ([prev] if prev else []) + formas_copias(raw):
             if not cand or cand in vistos:
                 continue
+            if os.name == "nt" and "/" in str(cand):
+                continue
+            letra = re.match(r"^[A-Za-z]:\\?$", str(cand).rstrip("\\"))
+            if letra:
+                try:
+                    if not os.path.isdir(cand if str(cand).endswith("\\") else str(cand) + "\\"):
+                        continue
+                except OSError:
+                    continue
             vistos.append(cand)
             try:
                 os.listdir(cand)
                 box["root"] = cand
                 return
             except OSError as e:
+                if getattr(e, "winerror", None) in (50, 3) and letra:
+                    continue
+                if getattr(e, "winerror", None) == 50:
+                    continue
                 last = e
         box["err"] = last
 
@@ -285,13 +380,180 @@ def abrir_copias(raw: str, segundos=25) -> str:
         mp[raw] = box["root"]
         CFG["copias_roots_map"] = mp
         print("[sentinel] copias en", box["root"])
+        _marcar_enlace(raw, "ok", box["root"])
         return box["root"]
     e = box["err"]
-    extra = f" ({e})" if e else ""
+    extra = f" ({_err_unc(e)})" if e else ""
+    _marcar_enlace(raw, "off", extra.strip() or "no está conectado")
     raise ValueError(
         f"No se alcanza {raw}{extra}. "
-        "Abra esa ruta en el Explorador de Windows (si pide usuario, inicie sesión) y deje SENTINEL abierto."
+        "Use \\\\IP\\carpeta en el Explorador, inicie sesión y deje SENTINEL abierto."
     )
+
+
+def probe_smb(raw: str, segundos=8) -> tuple[str, str]:
+    box = {"ok": None, "err": None}
+
+    def run():
+        for cand in formas_copias(raw):
+            if os.name == "nt" and "/" in str(cand):
+                continue
+            if re.match(r"^[A-Za-z]:\\?$", str(cand).rstrip("\\")):
+                try:
+                    if not os.path.isdir(cand if str(cand).endswith("\\") else str(cand) + "\\"):
+                        continue
+                except OSError:
+                    continue
+            try:
+                os.listdir(cand)
+                box["ok"] = cand
+                return
+            except OSError as e:
+                if getattr(e, "winerror", None) in (50, 3):
+                    continue
+                box["err"] = e
+
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(segundos)
+    if t.is_alive():
+        _marcar_enlace(raw, "try", "intentando conectar")
+        return "try", "intentando conectar"
+    if box["ok"]:
+        _marcar_enlace(raw, "ok", str(box["ok"]))
+        return "ok", str(box["ok"])
+    det = _err_unc(box["err"]) if box["err"] else "no está conectado"
+    _marcar_enlace(raw, "off", det)
+    return "off", det
+
+
+def probe_tcp(ip: str, puerto=5900, segundos=4) -> tuple[str, str]:
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(segundos)
+    try:
+        sock.connect((ip, int(puerto)))
+        return "ok", f":{puerto}"
+    except socket.timeout:
+        return "try", "intentando conectar"
+    except OSError:
+        return "off", "no está conectado"
+    finally:
+        try:
+            sock.close()
+        except OSError:
+            pass
+
+
+def probe_ping(ip: str, segundos=4) -> tuple[str, str]:
+    import subprocess
+    cmd = ["ping", "-n", "1", "-w", "1500", ip] if os.name == "nt" else ["ping", "-c", "1", "-W", "1", ip]
+    try:
+        r = subprocess.run(cmd, timeout=segundos, capture_output=True)
+        if r.returncode == 0:
+            return "ok", "ping"
+    except Exception:
+        pass
+    return "off", "sin ping"
+
+
+def probe_enlace(e: dict):
+    with ENLACE_LOCK:
+        ENLACE_STATE[e["id"]] = {"estado": "try", "detalle": "intentando conectar", "t": time.time()}
+    try:
+        ruta = e.get("ruta") or ("\\\\" + e["ip"])
+        asegurar_sesion_unc(ruta)
+        est, det = probe_smb(ruta)
+    except Exception as ex:
+        est, det = "off", str(ex)
+    with ENLACE_LOCK:
+        ENLACE_STATE[e["id"]] = {"estado": est, "detalle": det, "t": time.time()}
+
+
+def enlaces_estado() -> list[dict]:
+    with ENLACE_LOCK:
+        out = []
+        for e in ENLACES:
+            st = ENLACE_STATE.get(e["id"]) or {"estado": "try", "detalle": "intentando conectar"}
+            item = dict(e)
+            item.update(st)
+            out.append(item)
+        return out
+
+
+def explorar_ruta(eid: str, sub: str = "") -> dict:
+    e = next((x for x in ENLACES if x["id"] == eid), None)
+    if not e:
+        return {"ok": False, "error": "Dirección no reconocida."}
+    sub = (sub or "").replace("/", "\\").strip("\\")
+    if ".." in sub or ":" in sub:
+        return {"ok": False, "error": "Subcarpeta no válida."}
+    base = e.get("ruta") or ("\\\\" + e["ip"])
+    try:
+        root = abrir_copias(base, segundos=12)
+    except Exception as ex:
+        return {
+            "ok": False, "id": e["id"], "ip": e["ip"], "label": e.get("label"),
+            "ruta": base, "error": str(ex), "items": []
+        }
+    path = root
+    if sub:
+        path = str(root).rstrip("\\/") + "\\" + sub
+    items = []
+    err = None
+    box = {"names": None, "err": None}
+
+    def run():
+        try:
+            box["names"] = os.listdir(path)
+        except OSError as ex:
+            box["err"] = ex
+
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(12)
+    if t.is_alive():
+        err = "La red tarda en listar esa carpeta."
+    elif box["err"]:
+        err = _err_unc(box["err"])
+    else:
+        for name in sorted(box["names"] or [], key=lambda s: s.lower())[:400]:
+            if name.startswith("."):
+                continue
+            full = str(path).rstrip("\\/") + "\\" + name
+            es_dir = False
+            try:
+                es_dir = os.path.isdir(full)
+            except OSError:
+                es_dir = False
+            items.append({
+                "name": name,
+                "dir": es_dir,
+                "bak": name.lower().endswith(".bak"),
+            })
+    return {
+        "ok": err is None,
+        "id": e["id"],
+        "ip": e["ip"],
+        "label": e.get("label"),
+        "ruta": path,
+        "sub": sub,
+        "error": err,
+        "items": items,
+        "n": len(items),
+    }
+
+
+def enlaces_loop():
+    while True:
+        for e in ENLACES:
+            try:
+                probe_enlace(e)
+            except Exception as ex:
+                with ENLACE_LOCK:
+                    ENLACE_STATE[e["id"]] = {"estado": "off", "detalle": str(ex), "t": time.time()}
+        if WATCH_STOP.wait(timeout=20):
+            break
 
 
 def listar_bak(root: Path, desde=None) -> list[dict]:
@@ -834,7 +1096,7 @@ def fuente_estado():
         nota = (
             "Esta carpeta está en el PC Windows (Db Developer). "
             "Al abrir SENTINEL PABON ahí, leerá C:\\Users\\Db Developer\\Documents\\SENTINEL "
-            "y las copias en \\\\172.168.100.10\\copias y \\\\172.168.10.100"
+            "y las copias en \\\\172.168.100.10\\copias"
         )
     copias = copias_txt()
     roots = list((CFG.get("copias_roots_map") or {}).values())
@@ -856,6 +1118,7 @@ def fuente_estado():
         "ultimo_hasta": CFG.get("ultimo_hasta"),
         "nota": nota,
         "copias": copias,
+        "enlaces": enlaces_estado(),
         "copias_lista": lista_copias(),
         "copias_activo": bool(CFG.get("copias_activo", True)),
         "copias_existe": copias_ok,
@@ -1208,6 +1471,15 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/fuente":
             self._json(200, fuente_estado())
             return
+        if path == "/api/enlaces":
+            self._json(200, {"ok": True, "enlaces": enlaces_estado()})
+            return
+        if path == "/api/explorar":
+            qs = parse_qs(urlparse(self.path).query)
+            eid = (qs.get("id") or [""])[0]
+            sub = (qs.get("sub") or [""])[0]
+            self._json(200, explorar_ruta(eid, sub))
+            return
         if path.rstrip("/") == "/api/fuente/sync":
             en_curso = not kick_ciclo(False)
             st = fuente_estado()
@@ -1344,6 +1616,7 @@ def main():
     preparar_superusuario()
     t = threading.Thread(target=watch_loop, name="excel-watch", daemon=True)
     t.start()
+    threading.Thread(target=enlaces_loop, name="enlaces", daemon=True).start()
     httpd = ThreadingHTTPServer(("0.0.0.0", 8080), Handler)
     print("[sentinel] LISTO  http://localhost:8080")
     print("[sentinel] el Excel y las copias se leen en segundo plano")
