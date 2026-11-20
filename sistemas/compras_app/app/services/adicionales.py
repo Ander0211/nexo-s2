@@ -165,7 +165,9 @@ def eliminar(con: sqlite3.Connection, id_: int) -> None:
 
 
 def vaciar(con: sqlite3.Connection) -> int:
+    """«Vaciar lista»: quita TODOS los productos y las ofertas subidas en Adicionales (ofertas_libres). No toca el tablero."""
     n = con.execute("DELETE FROM adicionales").rowcount
+    con.execute("DELETE FROM ofertas_libres")
     con.commit()
     return n
 

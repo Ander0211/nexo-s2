@@ -328,3 +328,72 @@ export function activarVerClave(raiz = document) {
     caja.append(boton);
   });
 }
+
+/**
+ * ORDENAR CUALQUIER TABLA CON UN CLIC EN EL TÍTULO (de mayor a menor o alfabéticamente; otro clic invierte el sentido).
+ * Vale para las tablas sencillas (una fila de títulos): usuarios, pendientes, historial, listas, envíos del proveedor...
+ * Las que ya ordenan a su manera se saltan: Administración (ordena en el servidor, con .orden-col), Adicionales (ordena
+ * sus datos, ver adicionales.js) y las marcadas con data-sin-orden. Se vigila la página porque esas tablas se redibujan
+ * a menudo: al redibujarse, se vuelve a aplicar el orden que el usuario había elegido.
+ * Los números se reconocen con el formato de Colombia ($ 1.234.567,50 · 12,5 % · 1.000 und); lo vacío («—») va al final.
+ */
+const ORDEN_TABLA = new WeakMap(); // tabla → { col, asc }
+
+function valorCelda(td) {
+  const t = (td?.textContent || '').trim();
+  if (!t || t === '—' || t === '-') return null;
+  const n = t.replace(/[$%\s]|und\.?|unidades?/gi, '');
+  if (/^-?\d{1,3}(\.\d{3})*(,\d+)?$|^-?\d+(,\d+)?$/.test(n)) return Number(n.replace(/\./g, '').replace(',', '.'));
+  return t.toLocaleLowerCase('es').normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function aplicarOrden(tabla) {
+  const est = ORDEN_TABLA.get(tabla), tbody = tabla.tBodies[0];
+  if (!est || !tbody) return;
+  [...tabla.tHead.rows[0].cells].forEach((th, i) => {
+    if (i === est.col) { th.setAttribute('aria-sort', est.asc ? 'ascending' : 'descending'); th.dataset.flecha = est.asc ? '▲' : '▼'; } else th.removeAttribute('aria-sort');
+  });
+  const filas = [...tbody.rows].filter((f) => f.cells.length > 1);
+  if (filas.length < 2) return;
+  const val = new Map(filas.map((f) => [f, valorCelda(f.cells[est.col])]));
+  filas.sort((a, b) => {
+    const x = val.get(a), y = val.get(b);
+    if (x === null || y === null) return (x === null) - (y === null); // vacío al final, en los dos sentidos
+    const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'es', { numeric: true });
+    return est.asc ? c : -c;
+  });
+  tbody.append(...filas);
+}
+
+function prepararTabla(tabla) {
+  const cab = tabla.tHead;
+  if (!cab || cab.dataset.ordenable || cab.rows.length !== 1 || tabla.matches('[data-sin-orden], #adm-tabla, #adi-tabla') || cab.querySelector('.orden-col')) return;
+  cab.dataset.ordenable = '1';
+  [...cab.rows[0].cells].forEach((th, col) => {
+    if (!th.textContent.trim() || th.colSpan > 1) return;
+    th.classList.add('th-ordenable');
+    th.title = th.title || 'Ordenar por esta columna (otro clic invierte el sentido)';
+    th.addEventListener('click', () => {
+      const est = ORDEN_TABLA.get(tabla);
+      if (est && est.col === col) est.asc = !est.asc;
+      else {
+        // Números: primero de MAYOR a menor; textos: de la A a la Z.
+        const primero = [...(tabla.tBodies[0]?.rows || [])].map((f) => valorCelda(f.cells[col])).find((v) => v !== null);
+        ORDEN_TABLA.set(tabla, { col, asc: typeof primero !== 'number' });
+      }
+      aplicarOrden(tabla);
+    });
+  });
+  aplicarOrden(tabla); // se redibujó: conserva el orden que el usuario había elegido
+}
+
+export function ordenarTablas() {
+  const revisar = () => document.querySelectorAll('table').forEach(prepararTabla);
+  revisar();
+  let pendiente = false;
+  new MutationObserver(() => {
+    if (pendiente) return;
+    pendiente = true;
+    requestAnimationFrame(() => { pendiente = false; revisar(); });
+  }).observe(document.body, { childList: true, subtree: true });
+}

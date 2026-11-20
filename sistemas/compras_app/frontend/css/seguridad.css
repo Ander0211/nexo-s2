@@ -116,6 +116,8 @@ dialog.confirmar-clave .v-cuerpo { display: grid; gap: 12px; }
 .adi-barra-botones { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin: -4px 0 16px; padding: 10px 12px;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
 .adi-grupo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.adi-vaciar { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+.adi-vaciar:hover { color: #fff; background: var(--bad); border-color: var(--bad); }
 #adi-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .adi-ver-inh { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; }
 .adi-ver-inh .n { padding: 1px 8px; border-radius: 999px; background: #fde8e8; color: var(--bad); font-weight: 700; }

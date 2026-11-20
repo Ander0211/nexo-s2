@@ -735,6 +735,28 @@ def para_calculo(con: sqlite3.Connection, t: Tabla) -> pd.DataFrame:
 
 
 # --------------------------------------------------------------------------------------------- impacto de borrar
+def impacto_empresa(con: sqlite3.Connection, cod: str | None, nombre: str | None = None) -> str:
+    """El aviso al eliminar un proveedor: se borra TODO lo suyo y el tablero busca la siguiente oferta más baja."""
+    quien = f"«{nombre}» (código {cod})" if nombre else f"el proveedor {cod}"
+    n_of = con.execute("SELECT COUNT(*) FROM ofertas WHERE cod_empresa = ?", (cod,)).fetchone()[0]
+    if not n_of:
+        return f"Se elimina {quien}. No tiene ofertas en el tablero."
+    productos = [r[0] for r in con.execute("SELECT DISTINCT cod_producto FROM ofertas WHERE cod_empresa = ?", (cod,))]
+    solo_el = sum(
+        1 for p in productos
+        if con.execute("SELECT COUNT(DISTINCT cod_empresa) FROM ofertas WHERE cod_producto = ?", (p,)).fetchone()[0] == 1
+    )
+    texto = (
+        f"Se elimina {quien} con TODO lo suyo: {'su oferta' if n_of == 1 else f'sus {n_of} ofertas'} (de Portafolio y las cargadas), los productos donde "
+        "se había elegido a mano y sus ofertas de «Adicionales». En cada producto donde estaba, el tablero elegirá la "
+        "siguiente oferta más baja de otro proveedor."
+    )
+    if solo_el:
+        texto += f" {solo_el} producto(s) solo tenían oferta de este proveedor: quedarán «sin oferta»."
+    return texto
+
+
+
 def impacto(con: sqlite3.Connection, t: Tabla, fila_id: int) -> dict:
     """Qué pasaría en el tablero si se elimina esa fila (para avisarlo ANTES de confirmar). Eliminar se permite
     siempre; lo que queda «huérfano» se ve luego en los avisos de datos.
@@ -749,13 +771,7 @@ def impacto(con: sqlite3.Connection, t: Tabla, fila_id: int) -> dict:
         return con.execute(f"SELECT COUNT(*) FROM ofertas WHERE {campo} = ?", (valor,)).fetchone()[0]  # noqa: S608
 
     if t.clave == "empresas":
-        cod = nz.codigo_empresa(v["CODIGO_EMPRESA"])
-        n = ofertas_de("cod_empresa", cod)
-        if n:
-            mensajes.append(
-                f"Este proveedor tiene {n} oferta(s). Seguirán en el tablero, pero con el nombre «Proveedor {cod} "
-                "(no está en EMPRESA.xlsx)» y saldrá un aviso de datos."
-            )
+        mensajes.append(impacto_empresa(con, nz.codigo_empresa(v["CODIGO_EMPRESA"]), v.get("NOMBRE")))
     elif t.clave in ("stock", "existencias"):
         cod = nz.codigo_producto(v["COD_PRODUCTO"])
         otras = sum(

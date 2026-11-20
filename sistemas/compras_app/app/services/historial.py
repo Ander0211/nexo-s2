@@ -8,6 +8,8 @@ fecha, lo que había ANTES y lo que hay DESPUÉS. Desde el historial se puede de
     editar     → la fila vuelve a los valores que tenía
     eliminar   → la fila vuelve a existir, con su mismo número
     eliminar_varias → las filas vuelven a existir todas, con sus mismos números (se eliminaron juntas)
+    eliminar_empresa → el proveedor vuelve con TODO lo suyo: sus filas de Empresas y de Portafolio, sus ofertas cargadas,
+                       los productos donde se había elegido a mano y sus ofertas de «Adicionales»
     importar   → la tabla vuelve a estar como antes de importar el Excel (se guarda una copia completa)
 
 Límites (para que la base no crezca sin fin): se recuerdan los últimos 300 cambios y las copias completas de las
@@ -75,6 +77,16 @@ def registrar_varias(
     return cur.lastrowid
 
 
+def registrar_empresa(con: sqlite3.Connection, todo: dict, resumen: str, usuario: str | None = None) -> int:
+    """Anota la eliminación de uno o varios proveedores con TODO lo suyo (ver admin.eliminar), comprimido."""
+    cur = con.execute(
+        "INSERT INTO cambios (tabla, accion, antes, resumen, usuario) VALUES ('empresas', 'eliminar_empresa', ?, ?, ?)",
+        (_comprimir([todo]), resumen, usuario),
+    )
+    _podar(con)
+    return cur.lastrowid
+
+
 def registrar_copia(con: sqlite3.Connection, t: tablas.Tabla, resumen: str, usuario: str | None = None) -> int:
     """Anota una importación guardando una copia COMPLETA de la tabla tal como está AHORA (antes de importar)."""
     cur = con.execute(
@@ -90,8 +102,8 @@ def _podar(con: sqlite3.Connection) -> None:
     con.execute("DELETE FROM cambios WHERE id NOT IN (SELECT id FROM cambios ORDER BY id DESC LIMIT ?)", (MAX_CAMBIOS,))
     con.execute(
         "UPDATE cambios SET antes = NULL, resumen = resumen || ' (sin copia para deshacer)' "
-        "WHERE accion IN ('importar', 'eliminar_varias') AND antes IS NOT NULL AND id NOT IN "
-        "(SELECT id FROM cambios WHERE accion IN ('importar', 'eliminar_varias') AND antes IS NOT NULL "
+        "WHERE accion IN ('importar', 'eliminar_varias', 'eliminar_empresa') AND antes IS NOT NULL AND id NOT IN "
+        "(SELECT id FROM cambios WHERE accion IN ('importar', 'eliminar_varias', 'eliminar_empresa') AND antes IS NOT NULL "
         "ORDER BY id DESC LIMIT ?)",
         (MAX_COPIAS,),
     )
@@ -102,7 +114,7 @@ def listar(con: sqlite3.Connection, tabla: str | None = None, limite: int = 100)
     filtro, params = ("WHERE tabla = ?", [tabla]) if tabla else ("", [])
     filas = con.execute(
         "SELECT id, fecha, tabla, accion, fila_id, resumen, deshecho, usuario, "
-        "(accion NOT IN ('importar', 'eliminar_varias') OR antes IS NOT NULL) AS se_puede "
+        "(accion NOT IN ('importar', 'eliminar_varias', 'eliminar_empresa') OR antes IS NOT NULL) AS se_puede "
         f"FROM cambios {filtro} ORDER BY id DESC LIMIT ?",  # noqa: S608
         [*params, max(1, min(int(limite), 500))],
     ).fetchall()
@@ -135,6 +147,33 @@ def _deshacer_uno(con: sqlite3.Connection, c: sqlite3.Row) -> None:
             raise tablas.TablaError(f"No se puede deshacer: ya hay otra fila con el número {ocupadas[0]}.", 409)
         for f in filas:
             tablas.insertar_crudo(con, t, f["valores"], f["id"])
+    elif accion == "eliminar_empresa":
+        if c["antes"] is None:
+            raise tablas.TablaError("Ese cambio es muy antiguo: ya no hay copia para deshacerlo.", 409)
+        todo = _descomprimir(c["antes"])[0]
+        t_emp, t_port = tablas.obtener("empresas"), tablas.obtener("portafolio")
+        for tt, filas in ((t_emp, todo["empresa_filas"]), (t_port, todo["portafolio_filas"])):
+            ocupadas = [f["id"] for f in filas if tablas.leer_fila(con, tt, f["id"]) is not None]
+            if ocupadas:
+                raise tablas.TablaError(f"No se puede deshacer: ya hay otra fila con el número {ocupadas[0]} en {tt.titulo}.", 409)
+        for tt, filas in ((t_emp, todo["empresa_filas"]), (t_port, todo["portafolio_filas"])):
+            for f in filas:
+                tablas.insertar_crudo(con, tt, f["valores"], f["id"])
+        for e in todo.get("empresas_db", []):
+            con.execute("INSERT OR IGNORE INTO empresas (cod, nombre, origen) VALUES (?, ?, ?)", (e["cod"], e["nombre"], e["origen"]))
+        for o in todo.get("ofertas", []):
+            con.execute(
+                "INSERT INTO ofertas (cod_producto, cod_empresa, valor, presentacion, disponible, origen, creado) VALUES (?,?,?,?,?,?,?)",
+                (o["cod_producto"], o["cod_empresa"], o["valor"], o["presentacion"], o["disponible"], o["origen"], o["creado"]),
+            )
+        for s in todo.get("seleccion", []):
+            con.execute("INSERT OR REPLACE INTO seleccion (cod_producto, cod_empresa) VALUES (?, ?)", (s["cod_producto"], s["cod_empresa"]))
+        for lib in todo.get("libres", []):
+            columnas = list(lib)
+            con.execute(
+                f"INSERT OR REPLACE INTO ofertas_libres ({', '.join(columnas)}) VALUES ({', '.join('?' * len(columnas))})",  # noqa: S608
+                [lib[k] for k in columnas],
+            )
     elif accion == "importar":
         if c["antes"] is None:
             raise tablas.TablaError("Esa importación es muy antigua: ya no hay copia para deshacerla.", 409)

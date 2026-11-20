@@ -57,7 +57,10 @@ def editar_empresa(cod: str, body: EmpresaEdit, db: sqlite3.Connection = Depends
 
 @router.delete("/empresas/{cod}")
 def eliminar_empresa(cod: str, db: sqlite3.Connection = Depends(get_db)):
-    """Elimina un proveedor propio sin ofertas. Los del Excel base, o con ofertas, responden 409."""
+    """Elimina un proveedor propio con TODO lo suyo; el tablero busca la siguiente oferta más baja. Los del Excel base responden 409."""
+    from ..services import importador
+
     with db:
-        catalogo.eliminar_empresa(db, codigo_empresa(cod) or cod)
-    return {"ok": True}
+        n = catalogo.eliminar_empresa(db, codigo_empresa(cod) or cod)
+    importador.recalcular(db)
+    return {"ok": True, "ofertas_eliminadas": n}

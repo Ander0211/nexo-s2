@@ -20,7 +20,7 @@
  * dibujan; las funciones «cargar...» piden datos al servidor y luego llaman a las de pintar.
  */
 import { api } from './api.js';
-import { $, $$, el, icono, fmtNum, fmtMoney, fmtPct, contar, toast, debounce, avisosAlFondo, rangoPaginas, confirmar, etiquetaNuevo, hacerMovibles, descargarConAviso, activarVerClave } from './util.js';
+import { $, $$, el, icono, fmtNum, fmtMoney, fmtPct, contar, toast, debounce, avisosAlFondo, rangoPaginas, confirmar, etiquetaNuevo, hacerMovibles, descargarConAviso, activarVerClave, ordenarTablas } from './util.js';
 import { medidorStock, barrasProveedores } from './graficos.js';
 import { montarPodio } from './podio.js';
 import { nombreEmpresa } from './empresa.js';
@@ -42,6 +42,7 @@ const S = {
   empresa: null, // código del proveedor filtrado desde el gráfico (null = ninguno)
   empresaNombre: '',
   orden: 'inversion', // criterio de orden
+  dir: null, // sentido: 'desc' (mayor a menor, Z–A) o 'asc' (menor a mayor, A–Z); null = el natural de ese criterio
   pagina: 1,
   tam: 25, // productos por página
   verTodosProv: false, // ¿el gráfico muestra los 12 principales o todos los proveedores?
@@ -155,6 +156,35 @@ function cambiarFiltro(id) {
   S.filtro = id; S.pagina = 1;
   if (id === 'sin_oferta') { S.empresa = null; S.empresaNombre = ''; pintarProveedores(); }
   pintarChips(); cargarLista();
+}
+
+// ------------------------------------------------------------------ Orden de la lista (y Excel del tablero)
+// Los números se ordenan de MAYOR a MENOR por defecto y los textos de la A a la Z; el botón del sentido (o un 2.º clic en el título) lo invierte.
+const TEXTOS_ORDEN = new Set(['descripcion', 'proveedor', 'codigo']);
+const direccion = () => S.dir || (TEXTOS_ORDEN.has(S.orden) ? 'asc' : 'desc');
+
+/** Pinta el sentido del orden (botón y flecha del título activo) y arma la dirección del «Excel del tablero» con lo que se ve. */
+function pintarOrden() {
+  const texto = TEXTOS_ORDEN.has(S.orden), asc = direccion() === 'asc';
+  const b = $('#orden-dir');
+  b.textContent = texto ? (asc ? 'A → Z' : 'Z → A') : (asc ? '↑ Menor a mayor' : '↓ Mayor a menor');
+  b.title = 'Cambiar el sentido del orden';
+  $('#orden').value = S.orden;
+  $$('.cabecera-lista [data-orden]').forEach((h) => {
+    const activo = h.dataset.orden === S.orden;
+    h.title = 'Ordenar por esta columna (otro clic invierte el sentido)';
+    if (activo) { h.setAttribute('aria-sort', asc ? 'ascending' : 'descending'); h.dataset.flecha = asc ? '▲' : '▼'; } else h.removeAttribute('aria-sort');
+  });
+  const p = { q: S.q, filtro: S.filtro, orden: S.orden, direccion: direccion() };
+  if (S.empresa) p.empresa = S.empresa;
+  $('#btn-excel-tablero')?.setAttribute('href', `/api/exportar/tablero?${new URLSearchParams(p)}`);
+}
+
+/** Ordenar por un criterio: si ya era ese, se invierte el sentido; si no, empieza con su sentido natural. */
+function ordenarPor(criterio) {
+  if (S.orden === criterio) S.dir = direccion() === 'asc' ? 'desc' : 'asc';
+  else { S.orden = criterio; S.dir = null; }
+  S.pagina = 1; cargarLista();
 }
 
 // ------------------------------------------------------------------ Lista de productos
@@ -432,7 +462,8 @@ async function cargarLista({ silencioso = false } = {}) {
   if (!silencioso) caja.replaceChildren(...Array.from({ length: 7 }, () => el('div', { class: 'esqueleto' })));
   let r;
   try {
-    r = await api.productos({ q: S.q, filtro: S.filtro, empresa: S.empresa, orden: S.orden, pagina: S.pagina, tam: S.tam });
+    pintarOrden();
+    r = await api.productos({ q: S.q, filtro: S.filtro, empresa: S.empresa, orden: S.orden, direccion: direccion(), pagina: S.pagina, tam: S.tam });
   } catch (e) {
     if (mio === ticket) caja.replaceChildren(el('div', { class: 'vacio' }, el('strong', {}, 'No se pudo cargar la lista'), e.message));
     return;
@@ -772,7 +803,10 @@ function iniciar() {
 
   // Buscador: espera 250 ms de pausa al escribir y vuelve a la página 1.
   $('#q').addEventListener('input', debounce((ev) => { S.q = ev.target.value.trim(); S.pagina = 1; cargarLista(); }, 250));
-  $('#orden').addEventListener('change', (ev) => { S.orden = ev.target.value; S.pagina = 1; cargarLista(); });
+  $('#orden').addEventListener('change', (ev) => { S.orden = ev.target.value; S.dir = null; S.pagina = 1; cargarLista(); });
+  $('#orden-dir').addEventListener('click', () => { S.dir = direccion() === 'asc' ? 'desc' : 'asc'; S.pagina = 1; cargarLista(); });
+  $$('.cabecera-lista [data-orden]').forEach((h) => h.addEventListener('click', () => ordenarPor(h.dataset.orden)));
+  ordenarTablas(); // las demás tablas (usuarios, pendientes, historial...) se ordenan con un clic en el título
   // Las ventanas emergentes: se conectan una vez; las opciones del menú solo las abren.
   agregar = montarAgregar({ alGuardar: alGuardarOferta });
   cargar = montarCargar({ alCambiar: alCargarDatos, abrirAgregar: () => abrirAgregar() });

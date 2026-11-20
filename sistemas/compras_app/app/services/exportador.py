@@ -10,6 +10,7 @@ proveedor ELEGIDO de cada uno (la mejor oferta, o la que el usuario eligió a ma
 """
 
 import io
+from datetime import date
 import sqlite3
 
 from openpyxl import Workbook
@@ -124,6 +125,64 @@ def productos_a_comprar_xlsx(con: sqlite3.Connection) -> bytes:
         [14, 60, 13, 12, 14, 45, 12, 16],
         miles=(2, 3, 4, 6, 7),
     )
+
+
+FILTROS_TEXTO = {
+    "por_comprar": "Por comprar", "con_oferta": "Con oferta", "sin_oferta": "Sin oferta",
+    "elegidos": "Elegidos por ti", "nuevos": "Nuevos", "todos": "Todos",
+}
+
+
+def tablero_xlsx(items: list[dict], filtro: str, q: str = "", empresa: str | None = None) -> bytes:
+    """EL TABLERO DE COMPRAS TAL COMO SE VE: los mismos productos (filtro, búsqueda, proveedor) y en el mismo orden de la
+    pantalla, pero TODAS las páginas. Una fila por producto con lo que muestra cada columna del tablero."""
+    filas = []
+    for i in items:
+        e, m = i["elegida"], i["mejor"]
+        proveedor = e["empresa"] if e else "Sin oferta"
+        if i["repartido"]:
+            proveedor = " + ".join(f"{ln['empresa']} ({ln['cantidad']})" for ln in i["reparto"])
+        filas.append([
+            i["cod"], i["descripcion"], i["existencias"], i["stock_max"], i["comprar"],
+            proveedor, e["valor"] if e else None, (e or {}).get("presentacion"),
+            "Sí" if i["elegida_a_mano"] else "",
+            m["empresa"] if (m and i["elegida_a_mano"]) else None, m["valor"] if (m and i["elegida_a_mano"]) else None,
+            (i["dif_segunda_pct"] / 100) if (i.get("dif_segunda_pct") is not None and not i["elegida_a_mano"]) else None,
+            i["n_ofertas"], i["total"], i["ahorro"] if not i["elegida_a_mano"] else None,
+        ])
+    columnas = ["CÓDIGO", "DESCRIPCIÓN", "EXISTENCIAS", "STOCK MÁXIMO", "COMPRAR", "MEJOR PROVEEDOR", "PRECIO UNITARIO",
+                "PRESENTACIÓN", "ELEGIDA POR TI", "MEJOR (SI ELEGISTE OTRA)", "VALOR DE LA MEJOR", "2.ª OFERTA (% MÁS CARA)",
+                "N.º OFERTAS", "TOTAL", "AHORRO"]
+    contenido = _xlsx("TABLERO", columnas, filas, [14, 55, 12, 13, 11, 40, 15, 16, 10, 32, 15, 14, 11, 16, 14],
+                      miles=(2, 3, 4, 6, 10, 12, 13, 14))
+    # Porcentaje en la columna de la 2.ª oferta, totales al final y, en otra hoja, qué filtro se usó.
+    from openpyxl import load_workbook
+
+    wb = load_workbook(io.BytesIO(contenido))
+    ws = wb.active
+    for (c,) in ws.iter_rows(min_row=2, min_col=12, max_col=12):
+        c.number_format = "0.0%"
+    if filas:
+        n = len(filas) + 1
+        ws.append([])
+        ws.append(["TOTAL", f"{len(filas)} productos", None, None, f"=SUM(E2:E{n})"] + [None] * 8
+                  + [f"=SUM(N2:N{n})", f"=SUM(O2:O{n})"])
+        for c in ws[ws.max_row]:
+            c.font = Font(name="Arial", size=10, bold=True)
+            if c.column in (5, 14, 15):
+                c.number_format = "#,##0"
+    ws.auto_filter.ref = f"A1:O{len(filas) + 1}"
+    info = wb.create_sheet("FILTRO")
+    for fila in (["Tablero de compras · SUMIPABON"], [], ["Filtro", FILTROS_TEXTO.get(filtro, filtro)],
+                 ["Búsqueda", q or "(ninguna)"], ["Proveedor", empresa or "(todos)"], ["Productos", len(filas)],
+                 ["Fecha", date.today().isoformat()]):
+        info.append(fila)
+    info["A1"].font = Font(bold=True, size=12)
+    info.column_dimensions["A"].width = 14
+    info.column_dimensions["B"].width = 40
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
 
 
 def cotizacion_xlsx(con: sqlite3.Connection, empresa: dict | None, grupo: str | None = None, q: str = "") -> bytes:

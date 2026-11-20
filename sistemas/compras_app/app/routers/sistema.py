@@ -13,6 +13,7 @@ Funciones generales que no son de un producto en particular:
 
 import sqlite3
 from datetime import date
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
@@ -58,6 +59,24 @@ def exportar_productos_a_comprar(db: sqlite3.Connection = Depends(get_db)):
         exportador.productos_a_comprar_xlsx(db),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="PRODUCTOS_A_COMPRAR.xlsx"'},
+    )
+
+
+@router.get("/exportar/tablero")
+def exportar_tablero(
+    q: str = "",
+    filtro: Literal["por_comprar", "con_oferta", "sin_oferta", "elegidos", "nuevos", "todos"] = "por_comprar",
+    empresa: str | None = None,
+    orden: Literal["inversion", "ahorro", "cantidad", "existencias", "precio", "descripcion", "proveedor", "codigo"] = "inversion",
+    direccion: Literal["asc", "desc"] | None = None,
+    db: sqlite3.Connection = Depends(get_db),
+):
+    """El tablero de compras en Excel TAL COMO SE VE (mismo filtro, búsqueda, proveedor y orden), con todas las páginas."""
+    items = tablero.filtrar_y_ordenar(tablero.construir_tablero(db), filtro, q, empresa, orden, direccion)
+    return Response(
+        exportador.tablero_xlsx(items, filtro, q, empresa),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="TABLERO_{date.today().isoformat()}.xlsx"'},
     )
 
 

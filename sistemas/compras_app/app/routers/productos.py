@@ -50,7 +50,8 @@ def listar(
     # Los 5 filtros de los botones de la pantalla:
     filtro: Literal["por_comprar", "con_oferta", "sin_oferta", "elegidos", "nuevos", "todos"] = "por_comprar",
     empresa: str | None = None,  # código de proveedor (clic en el gráfico «Dónde comprar»)
-    orden: Literal["inversion", "ahorro", "cantidad", "descripcion", "codigo"] = "inversion",
+    orden: Literal["inversion", "ahorro", "cantidad", "existencias", "precio", "descripcion", "proveedor", "codigo"] = "inversion",
+    direccion: Literal["asc", "desc"] | None = None,  # de menor a mayor / de mayor a menor (None = la natural de ese orden)
     pagina: int = Query(1, ge=1),  # ge=1: mínimo página 1
     tam: int = Query(25, ge=1, le=100),  # productos por página (entre 1 y 100)
     db: sqlite3.Connection = Depends(get_db),
@@ -59,7 +60,7 @@ def listar(
     # 1) Calcula el tablero completo (cantidad, mejor oferta, total... de cada producto).
     items = tablero.construir_tablero(db)
     # 2) Aplica búsqueda, filtro de chips, proveedor y orden.
-    filtrados = tablero.filtrar_y_ordenar(items, filtro, q, empresa, orden)
+    filtrados = tablero.filtrar_y_ordenar(items, filtro, q, empresa, orden, direccion)
     # 3) Recorta la página pedida. Si piden una página que no existe, se usa la última.
     total = len(filtrados)
     paginas = max(1, math.ceil(total / tam))

@@ -3,11 +3,11 @@
  * ======================
  * El usuario sube (Excel/CSV), pega o escribe el CÓDIGO y la DESCRIPCIÓN de productos, y ve para cada uno el Proveedor 1, 2 y 3
  * (en ese orden) con su MENOR VALOR ofertado al lado. Los cálculos los hace el servidor (app/services/adicionales.py).
- * Los productos no se borran: se INHABILITAN (quedan en rojo y no cuentan en el resumen ni en el Excel) y se pueden volver a habilitar.
+ * «Vaciar lista» quita TODOS los productos de una vez (pide confirmar). Uno por uno no se borran: se INHABILITAN (quedan en rojo y no cuentan en el resumen ni en el Excel) y se pueden volver a habilitar.
  * Es una lista de consulta: no cambia el tablero ni la orden de compra.
  */
 import { api } from './api.js';
-import { $, $$, el, icono, fmtNum, fmtMoney, toast } from './util.js';
+import { $, $$, el, icono, fmtNum, fmtMoney, toast, confirmar } from './util.js';
 import { puedeEditar } from './sesion.js';
 
 const PUESTOS = 3;
@@ -15,6 +15,35 @@ let datos = { items: [], total: 0, con_oferta: 0, sin_oferta: 0, inhabilitados: 
 let modo = 'uno';
 const POR_PAGINA = 300; // con hasta 100.000 productos, dibujar todos a la vez congelaría el navegador
 let visibles = POR_PAGINA;
+// Orden de la tabla: clic en un título (Código, Descripción, Proveedor N, Menor valor N); otro clic invierte el sentido.
+// Se ordenan TODOS los datos (no solo los 300 que se ven). Valores: de menor a mayor primero; textos: A–Z. Lo vacío va al final.
+let orden = null; // { campo: 'cod' | 'descripcion' | 'p1' | 'v1' | ..., asc: true }
+
+function valorOrden(it, campo) {
+  if (campo === 'cod' || campo === 'descripcion') return (it[campo] || '').toLocaleLowerCase('es') || null;
+  const p = it.proveedores[Number(campo[1]) - 1];
+  if (!p) return null;
+  return campo[0] === 'v' ? p.valor : (p.nombre || '').toLocaleLowerCase('es');
+}
+
+function ordenar(items) {
+  if (!orden) return items;
+  const { campo, asc } = orden;
+  return [...items].sort((a, b) => {
+    const x = valorOrden(a, campo), y = valorOrden(b, campo);
+    if (x == null || y == null) return (x == null) - (y == null);
+    const c = typeof x === 'number' ? x - y : x.localeCompare(y, 'es', { numeric: true });
+    return asc ? c : -c;
+  });
+}
+
+/** Un título que ordena: muestra ▲ / ▼ si es el activo. */
+function th(texto, campo, attrs = {}) {
+  const activo = orden && orden.campo === campo;
+  return el('th', { ...attrs, class: `${attrs.class || ''} th-ordenable`.trim(), title: 'Ordenar por esta columna (otro clic invierte el sentido)',
+    'aria-sort': activo ? (orden.asc ? 'ascending' : 'descending') : false, 'data-flecha': activo ? (orden.asc ? '▲' : '▼') : false,
+    onclick: () => { orden = activo ? { campo, asc: !orden.asc } : { campo, asc: true }; visibles = POR_PAGINA; pintarTabla(); } }, texto);
+}
 
 function pintarKpis() {
   const t = [
@@ -45,16 +74,16 @@ function celdasProveedor(p, puesto) {
 function pintarTabla() {
   const q = ($('#adi-buscar').value || '').trim().toLowerCase();
   const verInh = $('#adi-ver-inh').checked;
-  const items = datos.items.filter((it) => (verInh || it.activo) && (!q ||
+  const items = ordenar(datos.items).filter((it) => (verInh || it.activo) && (!q ||
     [it.cod, it.descripcion, ...it.proveedores.map((p) => p.nombre)].some((x) => (x || '').toLowerCase().includes(q))));
   const editar = puedeEditar();
   const cab = el('thead', {},
     el('tr', { class: 'adi-cab1' },
-      el('th', { rowspan: 2 }, 'Código'), el('th', { rowspan: 2 }, 'Descripción'),
+      th('Código', 'cod', { rowspan: 2 }), th('Descripción', 'descripcion', { rowspan: 2 }),
       ...Array.from({ length: PUESTOS }, (_, i) => el('th', { colspan: 2, class: `adi-grupo-th p${i + 1}` }, `Proveedor ${i + 1}`)),
       editar ? el('th', { rowspan: 2, class: 'acc' }, 'Estado') : null),
     el('tr', { class: 'adi-cab2' },
-      ...Array.from({ length: PUESTOS }, (_, i) => [el('th', { class: `p${i + 1}` }, 'Proveedor'), el('th', { class: `p${i + 1} num` }, 'Menor valor')])));
+      ...Array.from({ length: PUESTOS }, (_, i) => [th('Proveedor', `p${i + 1}`, { class: `p${i + 1}` }), th('Menor valor', `v${i + 1}`, { class: `p${i + 1} num` })])));
   const filas = items.slice(0, visibles).map((it) => el('tr', { class: it.activo ? '' : 'adi-inhabilitado' },
     el('td', { class: 'adi-cod num' }, it.cod),
     el('td', { class: 'adi-descr' }, it.descripcion || '—',
@@ -88,6 +117,24 @@ async function cambiarEstado(it) {
   try {
     pintar(await api.adicionalesActivo(it.id, !it.activo));
     toast(it.activo ? `${it.cod} inhabilitado.` : `${it.cod} habilitado de nuevo.`, 'ok');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/** «Vaciar lista»: quita todos los productos (y las ofertas subidas en Adicionales). No toca el tablero. */
+async function vaciar() {
+  const n = datos.items.length;
+  if (!n) { toast('La lista ya está vacía.', 'aviso'); return; }
+  const ok = await confirmar({
+    titulo: '¿Vaciar toda la lista?',
+    parrafos: [`Se quitará${n === 1 ? ' el producto' : `n los ${fmtNum(n)} productos`} de Adicionales (activos e inhabilitados) y las ofertas subidas aquí.`,
+      'El tablero, las ofertas y la orden de compra no cambian. Esto no se puede deshacer: si la necesita, pulse antes «Descargar Excel».'],
+    boton: 'Vaciar lista', peligro: true,
+  });
+  if (!ok) return;
+  try {
+    const r = await api.adicionalesVaciar();
+    pintar(r);
+    toast(`Lista vaciada: ${fmtNum(r.eliminados)} producto${r.eliminados === 1 ? '' : 's'} quitado${r.eliminados === 1 ? '' : 's'}.`, 'ok');
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -154,6 +201,7 @@ export function montarAdicionales() {
   $('#adi-buscar').addEventListener('input', reiniciar);
   $('#adi-ver-inh').addEventListener('change', reiniciar);
   $('#adi-agregar').addEventListener('click', abrirVentana);
+  $('#adi-vaciar').addEventListener('click', vaciar);
   $$('#dlg-adicional .adi-pestanas [data-modo]').forEach((b) => b.addEventListener('click', () => elegirModo(b.dataset.modo)));
   $('#adi-pegar').addEventListener('input', contarPegadas);
   // Pegar varias filas en «Código» cambia solo al modo «Pegar varios»

@@ -102,6 +102,41 @@ def editar(con: sqlite3.Connection, clave: str, fila_id: int, valores: dict, usu
     return _con_recalculo(con, trabajo)
 
 
+def todo_de_empresas(con: sqlite3.Connection, codigos: set[str]) -> dict:
+    """Todo lo que pertenece a esos proveedores (para borrarlo junto con ellos y poder devolverlo con «Deshacer»):
+    sus filas de Portafolio, sus ofertas cargadas a mano o por ficha, los productos donde se les eligió a mano
+    y sus ofertas de «Adicionales». Las ofertas «excel» no se guardan: salen de Portafolio al recalcular."""
+    t_port = tablas.obtener("portafolio")
+    lista = json.dumps(sorted(codigos))
+    portafolio = [
+        tablas.leer_fila(con, t_port, r["id"])
+        for r in con.execute(f"SELECT id, COD_EMPRESA FROM {t_port.sql}")  # noqa: S608
+        if nz.codigo_empresa(r["COD_EMPRESA"]) in codigos
+    ]
+    return {
+        "portafolio_filas": portafolio,
+        "ofertas": [dict(r) for r in con.execute(
+            "SELECT * FROM ofertas WHERE origen <> 'excel' AND cod_empresa IN (SELECT value FROM json_each(?))", (lista,))],
+        "seleccion": [dict(r) for r in con.execute(
+            "SELECT * FROM seleccion WHERE cod_empresa IN (SELECT value FROM json_each(?))", (lista,))],
+        "libres": [dict(r) for r in con.execute(
+            "SELECT * FROM ofertas_libres WHERE cod_empresa IN (SELECT value FROM json_each(?))", (lista,))],
+        "empresas_db": [dict(r) for r in con.execute(
+            "SELECT * FROM empresas WHERE origen IN ('manual', 'subido') AND cod IN (SELECT value FROM json_each(?))", (lista,))],
+    }
+
+
+def borrar_todo_de_empresas(con: sqlite3.Connection, codigos: set[str], todo: dict) -> None:
+    """Borra lo reunido por todo_de_empresas. Al recalcular, el tablero elige en cada producto la siguiente oferta más
+    baja de OTRO proveedor (o lo deja «sin oferta» si no hay otra)."""
+    lista = json.dumps(sorted(codigos))
+    tablas.borrar(con, tablas.obtener("portafolio"), [f["id"] for f in todo["portafolio_filas"]])
+    con.execute("DELETE FROM ofertas WHERE cod_empresa IN (SELECT value FROM json_each(?))", (lista,))
+    con.execute("DELETE FROM seleccion WHERE cod_empresa IN (SELECT value FROM json_each(?))", (lista,))
+    con.execute("DELETE FROM ofertas_libres WHERE cod_empresa IN (SELECT value FROM json_each(?))", (lista,))
+    con.execute("DELETE FROM empresas WHERE origen IN ('manual', 'subido') AND cod IN (SELECT value FROM json_each(?))", (lista,))
+
+
 def eliminar(con: sqlite3.Connection, clave: str, ids: list[int], usuario: str | None = None) -> dict:
     """Elimina una o varias filas. Siempre se permite: lo que quede sin par se ve después en los avisos de datos.
     Varias filas juntas quedan como UN solo cambio del historial (se deshacen todas de una vez)."""
@@ -109,6 +144,25 @@ def eliminar(con: sqlite3.Connection, clave: str, ids: list[int], usuario: str |
     filas = [f for i in dict.fromkeys(ids) if (f := tablas.leer_fila(con, t, i))]
     if not filas:
         raise tablas.TablaError("Esas filas ya no existen.", 404)
+
+    if clave == "empresas":
+        # Eliminar un proveedor borra TODO lo suyo y el tablero busca la siguiente oferta más baja de otro proveedor.
+        codigos = {c for f in filas if (c := nz.codigo_empresa(f["valores"]["CODIGO_EMPRESA"]))}
+
+        def trabajo_empresas():
+            todo = {**todo_de_empresas(con, codigos), "empresa_filas": filas}
+            nombres = ", ".join(_etiqueta(t, f["valores"]) for f in filas)
+            # Las mismas ofertas que cuenta el aviso de antes de confirmar (tablas.impacto_empresa): las del tablero.
+            n_of = con.execute(
+                "SELECT COUNT(*) FROM ofertas WHERE cod_empresa IN (SELECT value FROM json_each(?))", (json.dumps(sorted(codigos)),)
+            ).fetchone()[0]
+            historial.registrar_empresa(
+                con, todo, f"Eliminó {'el proveedor' if len(filas) == 1 else f'{len(filas)} proveedores'} {nombres} y todo lo suyo "
+                f"({n_of} oferta{'' if n_of == 1 else 's'})", usuario)
+            borrar_todo_de_empresas(con, codigos, todo)
+            return {"eliminadas": tablas.borrar(con, t, [f["id"] for f in filas]), "ofertas_eliminadas": n_of}
+
+        return _con_recalculo(con, trabajo_empresas)
 
     def trabajo():
         if len(filas) == 1:

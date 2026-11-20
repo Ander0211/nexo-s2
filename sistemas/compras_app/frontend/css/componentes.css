@@ -39,7 +39,17 @@
   display: grid; grid-template-columns: minmax(0, 1.4fr) 168px 176px minmax(0, 1.1fr) 148px 140px; gap: 14px; align-items: center;
 }
 .cabecera-lista { padding: 10px 20px; background: var(--panel-2); color: var(--muted); font-family: var(--font-encabezado); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; border-bottom: 1px solid var(--line); }
-.cabecera-lista .der { text-align: right; }
+.cabecera-lista .der { text-align: right; justify-content: flex-end; }
+/* Títulos de la lista que ordenan (clic) y el botón del sentido del orden */
+.cabecera-lista button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.cabecera-lista button:hover, .cabecera-lista button[aria-sort] { color: var(--accent); }
+.cabecera-lista button[aria-sort]::after { content: attr(data-flecha); font-size: 11px; }
+.btn-dir { height: 34px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--panel); color: var(--text); font: inherit; font-size: 12.5px; white-space: nowrap; cursor: pointer; }
+.btn-dir:hover { border-color: var(--accent); color: var(--accent); }
+/* Tablas que se ordenan con un clic en el título (util.js → ordenarTablas) */
+th.th-ordenable { cursor: pointer; user-select: none; }
+th.th-ordenable:hover { color: var(--accent); }
+th.th-ordenable[aria-sort]::after { content: attr(data-flecha); margin-left: 5px; font-size: 10px; color: var(--accent); }
 /* .fila: un producto. Sus ofertas se ven en una ventana emergente (botones «Mejor oferta» / «Otras ofertas»). */
 .fila { border-bottom: 1px solid var(--line); transition: background .15s; }
 .fila:last-child { border-bottom: 0; }

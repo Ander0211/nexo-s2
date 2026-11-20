@@ -585,6 +585,7 @@ _POLITICA_TEXTO = [
     ("GET", r"/api/avisos", EDITORES),
     ("POST", r"/api/importar", EDITORES),
     ("GET", r"/api/exportar/oc", EDITORES),
+    ("GET", r"/api/exportar/tablero", EDITORES),  # el tablero de compras en Excel, tal como se ve
     ("GET", r"/api/exportar/alternativas", EDITORES),
     # --- «Adicionales»: código y descripción → Proveedor 1, 2 y 3 con su menor valor ---
     # Solo el ADMINISTRADOR ve y usa «Adicionales» (ni Prime ni Consulta ni el proveedor)

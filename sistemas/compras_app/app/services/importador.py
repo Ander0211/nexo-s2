@@ -220,7 +220,12 @@ def recalcular(con: sqlite3.Connection) -> dict:
         if cod and n is not None:
             existencias[cod] = existencias.get(cod, 0) + n
             filas_exist.setdefault(cod, []).append(r.ID)
-    # Existencias de productos que no están en el stock: no tienen StockMax, así que no se compran.
+    # ¿De dónde sale el número del aviso «N productos con existencias no tienen stock definido»?
+    # Es la cantidad de códigos DISTINTOS que aparecen en Existencias (06-EXISTENCIAS.xlsx, el inventario de la bodega)
+    # pero NO en Stock (STOCK.xlsx, donde se define el StockMax de cada producto). Sin StockMax no se puede calcular
+    # cuánto comprar (Comprar = StockMax − Existencia), así que esos productos no entran al tablero ni a la orden.
+    # No es un error: suele ser inventario que no se compra por aquí (descontinuados, consignación, de otra área...).
+    # Si un código se repite en varias filas de Existencias se cuenta UNA vez (por eso el botón puede mostrar más filas).
     huerfanas = [c for c in existencias if c not in stock]
     if huerfanas:
         avisos.append(
@@ -228,7 +233,10 @@ def recalcular(con: sqlite3.Connection) -> dict:
                 "existencias_sin_stock",
                 "info",
                 f"{len(huerfanas)} productos con existencias no tienen stock definido",
-                "Se ignoran para la compra: " + _muestra(huerfanas),
+                "Están en el inventario (Existencias) pero no en Stock, donde se define su stock máximo. Sin stock máximo "
+                "no se puede calcular cuánto comprar (Comprar = Stock máximo − Existencia), así que no entran al tablero. "
+                "Es normal si son productos que no se compran (descontinuados, de consignación, de otra área); si alguno "
+                "sí se compra, agréguelo en Stock con su stock máximo. Códigos: " + _muestra(huerfanas),
                 [
                     _destino(
                         "Ir a Existencias y ver estas filas",
@@ -411,7 +419,8 @@ def recalcular(con: sqlite3.Connection) -> dict:
                 "ofertas_sin_stock",
                 "info",
                 f"{len(fuera)} productos con ofertas no tienen stock definido",
-                "No tienen cantidad a comprar: " + _muestra(fuera),
+                "Tienen ofertas de proveedores pero no están en Stock, donde se define su stock máximo; sin él la "
+                "cantidad a comprar es 0. Si alguno sí se compra, agréguelo en Stock. Códigos: " + _muestra(fuera),
                 [
                     _destino(
                         f"Ir a Stock y agregar el producto {fuera[0]}",

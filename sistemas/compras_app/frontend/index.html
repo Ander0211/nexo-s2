@@ -124,6 +124,8 @@
           <!-- «Actualizar todo»: vuelve a leer del servidor TODO el tablero (números de arriba, lista, «Dónde comprar» y avisos). No importa los Excel: eso lo hace «Actualizar Excel». -->
           <div class="tablero-acciones">
             <button class="btn btn-fantasma" id="btn-actualizar-todo" type="button" title="Volver a leer todos los datos del servidor"><span data-icono="refrescar" data-tam="16"></span>Actualizar todo</button>
+            <!-- «Excel del tablero»: el tablero TAL COMO SE VE (filtro, búsqueda, proveedor y orden), con todas las páginas. app.js arma su dirección. -->
+            <a class="btn btn-fantasma" id="btn-excel-tablero" data-roles="admin prime" href="/api/exportar/tablero" download data-descarga="el Excel del tablero" title="Descargar en Excel el tablero tal como se ve (mismo filtro, búsqueda y orden; todas las páginas)"><span data-icono="descargar" data-tam="16"></span>Excel del tablero</a>
             <small class="hora-actualizado" id="tablero-hora" aria-live="polite"></small>
           </div>
           <!-- Buscador: escribir filtra la lista (con 250 ms de pausa). El atajo «/» lo enfoca. -->
@@ -143,19 +145,25 @@
               <div class="chips" id="chips" role="group" aria-label="Filtros"></div>
               <div class="orden">
                 <select id="orden" aria-label="Ordenar por" title="Ordenar por">
-                  <option value="inversion">↕ Mayor inversión</option>
-                  <option value="ahorro">↕ Mayor ahorro</option>
-                  <option value="cantidad">↕ Mayor cantidad</option>
-                  <option value="descripcion">↕ Descripción (A–Z)</option>
-                  <option value="codigo">↕ Código</option>
+                  <option value="inversion">Total (inversión)</option>
+                  <option value="ahorro">Ahorro</option>
+                  <option value="cantidad">Cantidad a comprar</option>
+                  <option value="existencias">Stock (existencias)</option>
+                  <option value="precio">Precio unitario</option>
+                  <option value="proveedor">Proveedor</option>
+                  <option value="descripcion">Descripción</option>
+                  <option value="codigo">Código</option>
                 </select>
+                <!-- Sentido del orden: de mayor a menor / de menor a mayor (en textos: Z–A / A–Z). -->
+                <button class="btn-dir" id="orden-dir" type="button"></button>
               </div>
             </div>
             <!-- Franja que aparece solo cuando se filtra por un proveedor desde el gráfico. -->
             <div class="filtro-activo" id="filtro-activo" hidden></div>
             <!-- Títulos de las 6 columnas. Cada fila de producto tiene las mismas 6 (ver componentes.css).
                  «Ofertas» es la columna de los botones «Mejor oferta» y «Otras ofertas». -->
-            <div class="cabecera-lista"><span>Producto</span><span>Stock</span><span class="der">Comprar</span><span>Mejor proveedor</span><span>Ofertas</span><span class="der">Total</span></div>
+            <!-- Clic en un título ordena por esa columna; otro clic invierte el sentido (mayor↔menor, A–Z↔Z–A). -->
+            <div class="cabecera-lista"><button type="button" data-orden="descripcion">Producto</button><button type="button" data-orden="existencias">Stock</button><button type="button" class="der" data-orden="cantidad">Comprar</button><button type="button" data-orden="proveedor">Mejor proveedor</button><span>Ofertas</span><button type="button" class="der" data-orden="inversion">Total</button></div>
             <!-- Aquí se dibujan las filas de productos; los botones «Mejor oferta» y «Otras ofertas» de cada una abren la ventana de ofertas. -->
             <div id="filas" aria-live="polite"></div>
             <nav class="paginacion" id="paginacion" aria-label="Paginación"></nav>
@@ -236,6 +244,7 @@
             <button class="btn btn-primario" id="adi-agregar" type="button"><span data-icono="mas" data-tam="16"></span>Agregar</button>
             <label class="btn btn-fantasma"><span data-icono="subir" data-tam="16"></span>Subir Excel<input type="file" id="adi-archivo" accept=".xlsx,.xlsm,.csv" hidden></label>
             <a class="btn btn-fantasma" href="/api/adicionales/plantilla" download data-descarga="la plantilla"><span data-icono="archivo" data-tam="16"></span>Plantilla</a>
+            <button class="btn btn-fantasma adi-vaciar" id="adi-vaciar" type="button" title="Quita TODOS los productos de la lista (y las ofertas subidas aquí). No cambia el tablero."><span data-icono="papelera" data-tam="16"></span>Vaciar lista</button>
           </div>
           <div class="adi-grupo">
             <a class="btn btn-fantasma" id="adi-excel" href="/api/adicionales/excel" download data-descarga="la lista de adicionales"><span data-icono="descargar" data-tam="16"></span>Descargar Excel</a>

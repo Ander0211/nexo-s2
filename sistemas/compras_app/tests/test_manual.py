@@ -161,14 +161,12 @@ def test_proveedor_renombrado_sobrevive_a_actualizar_excel(cliente):
 
 
 def test_eliminar_proveedor(cliente):
-    """Solo se elimina un proveedor propio SIN ofertas; los del Excel base y los que tienen ofertas dan 409."""
+    """Eliminar un proveedor propio borra también sus ofertas; los del Excel base dan 409 (se eliminan en Administración)."""
     nuevo = cliente.post("/api/empresas", json={"nombre": "Temporal"}).json()["cod"]
-    cliente.post("/api/ofertas", json={"cod_producto": "A1", "cod_empresa": nuevo, "valor": 10})
-    r = cliente.delete(f"/api/empresas/{nuevo}")
-    assert r.status_code == 409 and "1 oferta" in r.json()["detail"]  # tiene una oferta
-    oferta_id = cliente.get("/api/productos/A1/ofertas").json()["ofertas"][0]["id"]
-    cliente.delete(f"/api/ofertas/{oferta_id}")  # se elimina su oferta...
-    assert cliente.delete(f"/api/empresas/{nuevo}").json() == {"ok": True}  # ...y ahora sí se puede eliminar
+    cliente.post("/api/ofertas", json={"cod_producto": "A1", "cod_empresa": nuevo, "valor": 1})
+    assert cliente.get("/api/productos/A1/ofertas").json()["ofertas"][0]["cod_empresa"] == nuevo  # era la más barata
+    assert cliente.delete(f"/api/empresas/{nuevo}").json() == {"ok": True, "ofertas_eliminadas": 1}
+    assert all(o["cod_empresa"] != nuevo for o in cliente.get("/api/productos/A1/ofertas").json()["ofertas"])
     assert cliente.delete("/api/empresas/2").status_code == 409  # BETA viene del Excel base
     assert cliente.delete("/api/empresas/999").status_code == 404
 

@@ -119,8 +119,10 @@ def actualizar_empresa(con: sqlite3.Connection, cod: str, nombre, origen: str = 
     return True
 
 
-def eliminar_empresa(con: sqlite3.Connection, cod: str) -> None:
-    """Elimina un proveedor PROPIO que no tenga ofertas. Los del Excel base no se pueden eliminar (409)."""
+def eliminar_empresa(con: sqlite3.Connection, cod: str) -> int:
+    """Elimina un proveedor PROPIO con TODO lo suyo (ofertas, elegidos a mano, ofertas de «Adicionales»); el tablero
+    busca la siguiente oferta más baja de otro proveedor. Los del Excel base se eliminan en Administración → Empresas
+    (409 aquí). Devuelve cuántas ofertas se borraron."""
     fila = con.execute("SELECT * FROM empresas WHERE cod = ?", (cod,)).fetchone()
     if not fila:
         raise CatalogoError("Ese proveedor no existe.", 404)
@@ -131,9 +133,10 @@ def eliminar_empresa(con: sqlite3.Connection, cod: str) -> None:
             409,
         )
     n = con.execute("SELECT COUNT(*) FROM ofertas WHERE cod_empresa = ?", (cod,)).fetchone()[0]
-    if n:
-        raise CatalogoError(f"Este proveedor tiene {n} oferta{'s' if n != 1 else ''}: elimínalas primero.", 409)
+    for tabla in ("ofertas", "seleccion", "ofertas_libres"):
+        con.execute(f"DELETE FROM {tabla} WHERE cod_empresa = ?", (cod,))  # noqa: S608
     con.execute("DELETE FROM empresas WHERE cod = ?", (cod,))
+    return n
 
 
 # --------------------------------------------------------------------------- Productos

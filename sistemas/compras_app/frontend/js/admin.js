@@ -313,9 +313,13 @@ async function pedirEliminar(ids) {
     try { impacto = (await api.adminImpacto(t.clave, ids[0])).mensaje; } catch (e) { toast(e.message, 'error'); return; }
   }
   const ok = await confirmar({
-    titulo: ids.length === 1 ? '¿Eliminar esta fila?' : `¿Eliminar ${fmtNum(ids.length)} filas de ${t.titulo}?`,
+    titulo: t.clave === 'empresas'
+      ? (ids.length === 1 ? '¿Eliminar este proveedor y todo lo suyo?' : `¿Eliminar ${fmtNum(ids.length)} proveedores y todo lo suyo?`)
+      : (ids.length === 1 ? '¿Eliminar esta fila?' : `¿Eliminar ${fmtNum(ids.length)} filas de ${t.titulo}?`),
     parrafos: [
-      impacto || (ids.length > 1 ? 'Lo que quede sin par (por ejemplo ofertas de un proveedor eliminado) saldrá en los avisos de datos.' : null),
+      impacto || (ids.length > 1 ? (t.clave === 'empresas'
+        ? 'Se eliminan estos proveedores con TODO lo suyo (sus ofertas, los productos donde se habían elegido a mano y sus ofertas de «Adicionales»). En cada producto, el tablero elegirá la siguiente oferta más baja de otro proveedor.'
+        : 'Lo que quede sin par saldrá en los avisos de datos.') : null),
       'Podrás deshacerlo desde el Historial.',
     ],
     boton: 'Eliminar', peligro: true,
@@ -324,7 +328,9 @@ async function pedirEliminar(ids) {
   try {
     const r = await api.adminEliminar(t.clave, ids);
     ids.forEach((id) => E.seleccion.delete(id));
-    toast(`${fmtNum(r.eliminadas)} fila(s) eliminada(s). Los datos se recalcularon. Puedes deshacerlo en el Historial.`, 'ok', 6000);
+    toast(t.clave === 'empresas'
+      ? `${r.eliminadas === 1 ? 'Proveedor eliminado' : `${fmtNum(r.eliminadas)} proveedores eliminados`} con ${r.ofertas_eliminadas === 1 ? 'su oferta' : `${fmtNum(r.ofertas_eliminadas || 0)} ofertas`}. El tablero eligió la siguiente oferta más baja. Puedes deshacerlo en el Historial.`
+      : `${fmtNum(r.eliminadas)} fila(s) eliminada(s). Los datos se recalcularon. Puedes deshacerlo en el Historial.`, 'ok', 7000);
     await alCambiarDatos();
   } catch (e) { toast(e.message, 'error'); }
 }

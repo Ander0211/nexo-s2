@@ -22,7 +22,6 @@ from . import ranking as rk
 from .normalizacion import clave_busqueda, sin_acentos
 
 # Valores permitidos para ordenar y filtrar (los mismos que ofrece la pantalla).
-ORDENES = ("inversion", "ahorro", "cantidad", "descripcion", "codigo")
 FILTROS = ("por_comprar", "con_oferta", "sin_oferta", "elegidos", "nuevos", "todos")
 
 
@@ -201,8 +200,23 @@ def conteos(items: list[dict]) -> dict:
     return {f: sum(1 for i in items if _cumple(i, f)) for f in FILTROS}
 
 
-def filtrar_y_ordenar(items, filtro="por_comprar", q="", empresa=None, orden="inversion") -> list[dict]:
-    """Aplica filtro, búsqueda y proveedor; luego ordena."""
+# Criterios de orden del tablero → (valor de cada producto, sentido por defecto). Los números van de MAYOR a MENOR por defecto
+# y los textos de la A a la Z; `direccion` («asc» / «desc») lo invierte. Lo vacío (sin oferta, sin stock) siempre queda AL FINAL.
+ORDENES = {
+    "inversion": (lambda i: i["total"], "desc"),
+    "ahorro": (lambda i: i["ahorro"], "desc"),
+    "cantidad": (lambda i: i["comprar"], "desc"),
+    "existencias": (lambda i: i["existencias"], "desc"),
+    "precio": (lambda i: i["elegida"]["valor"] if i["elegida"] else None, "desc"),
+    "descripcion": (lambda i: sin_acentos(i["descripcion"] or "").lower() or None, "asc"),
+    "proveedor": (lambda i: sin_acentos(i["elegida"]["empresa"] or "").lower() if i["elegida"] else None, "asc"),
+    # Códigos numéricos en orden numérico (5 antes que 10) y luego los que tienen letras.
+    "codigo": (lambda i: (0, int(i["cod"]), "") if i["cod"].isdigit() else (1, 0, i["cod"].lower()), "asc"),
+}
+
+
+def filtrar_y_ordenar(items, filtro="por_comprar", q="", empresa=None, orden="inversion", direccion=None) -> list[dict]:
+    """Aplica filtro, búsqueda y proveedor; luego ordena por `orden` en la `direccion` pedida (o la de por defecto)."""
     # Cada palabra escrita en el buscador debe aparecer en el producto (sin importar tildes ni mayúsculas).
     tokens = sin_acentos(q or "").lower().split()
     out = [
@@ -213,18 +227,14 @@ def filtrar_y_ordenar(items, filtro="por_comprar", q="", empresa=None, orden="in
         # Filtro por proveedor: solo productos cuya oferta elegida es de ese proveedor.
         and (not empresa or (i["elegida"] and i["elegida"]["cod_empresa"] == empresa))
     ]
-    if orden == "descripcion":
-        out.sort(key=lambda i: i["descripcion"].lower())
-    elif orden == "codigo":
-        # Códigos numéricos primero (en orden numérico: 5 antes que 10), luego los que tienen letras.
-        out.sort(key=lambda i: (not i["cod"].isdigit(), int(i["cod"]) if i["cod"].isdigit() else 0, i["cod"]))
-    elif orden == "cantidad":
-        out.sort(key=lambda i: (-i["comprar"], i["descripcion"]))
-    elif orden == "ahorro":
-        out.sort(key=lambda i: (-(i["ahorro"] or 0), i["descripcion"]))
-    else:  # inversion: mayor total primero, sin oferta al final
-        out.sort(key=lambda i: (i["total"] is None, -(i["total"] or 0), i["descripcion"]))
-    return out
+    valor, por_defecto = ORDENES.get(orden, ORDENES["inversion"])
+    descendente = (direccion or por_defecto) == "desc"
+    # Desempate estable por descripción; luego el criterio (invertido si es «desc»); lo vacío se separa y va al final.
+    out.sort(key=lambda i: (i["descripcion"] or "").lower())
+    con_valor = [i for i in out if valor(i) is not None]
+    vacios = [i for i in out if valor(i) is None]
+    con_valor.sort(key=valor, reverse=descendente)
+    return con_valor + vacios
 
 
 def resumen(con: sqlite3.Connection, items: list[dict]) -> dict:

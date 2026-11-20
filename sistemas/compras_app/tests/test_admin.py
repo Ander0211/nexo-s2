@@ -159,15 +159,40 @@ def test_un_numero_con_coma_o_puntos_se_acepta(cliente):
 
 
 # ------------------------------------------------------------------------------------------------ eliminar y huérfanos
-def test_eliminar_siempre_se_permite_y_deja_un_aviso_de_huerfanos(cliente):
-    """Se puede eliminar un proveedor que tiene ofertas: el tablero sigue funcionando y sale el aviso correspondiente."""
+def test_eliminar_un_proveedor_borra_todo_lo_suyo_y_el_tablero_busca_la_siguiente_menor(cliente):
+    """Eliminar BETA borra sus ofertas, lo elegido a mano y sus «Adicionales»; A1 pasa a la siguiente más baja; se deshace."""
+    antes = _item(cliente, "A1")["mejor"]
+    assert antes["cod_empresa"] == "2"
     beta = _fila(cliente, "empresas", CODIGO_EMPRESA="2")
     aviso = cliente.get(f"/api/admin/tablas/empresas/filas/{beta['id']}/impacto").json()["mensaje"]
-    assert "oferta" in aviso and "aviso" in aviso  # se le dice ANTES de confirmar
-    assert cliente.delete(f"/api/admin/tablas/empresas/filas/{beta['id']}").json()["eliminadas"] == 1
-    assert _item(cliente, "A1")["mejor"]["empresa"].startswith("Proveedor 2 (no está")  # sigue ofertando, sin nombre
-    detalle = _aviso(cliente, "Proveedores con ofertas que no existen")["detalle"]
-    assert "2" in detalle and "5" in detalle
+    assert "TODO lo suyo" in aviso and "siguiente oferta más baja" in aviso  # se le dice ANTES de confirmar
+    r = cliente.delete(f"/api/admin/tablas/empresas/filas/{beta['id']}").json()
+    assert r["eliminadas"] == 1 and r["ofertas_eliminadas"] >= 1
+    a1 = _item(cliente, "A1")
+    assert a1["mejor"]["cod_empresa"] != "2"  # otro proveedor, el más barato que queda
+    assert _fila(cliente, "portafolio", COD_EMPRESA="2") is None  # nada de BETA en Portafolio
+    assert "Proveedores con ofertas que no existen" not in _avisos(cliente)
+    h = cliente.get("/api/admin/historial").json()
+    assert "todo lo suyo" in h[0]["resumen"]
+    assert cliente.post(f"/api/admin/historial/{h[0]['id']}/deshacer").status_code == 200
+    a1 = _item(cliente, "A1")
+    assert a1["mejor"]["cod_empresa"] == "2"  # volvió todo
+    assert _fila(cliente, "portafolio", COD_EMPRESA="2") is not None and _fila(cliente, "empresas", CODIGO_EMPRESA="2")
+
+
+def test_eliminar_proveedor_elegido_a_mano_y_deshacer_devuelve_la_eleccion(cliente):
+    """GAMA elegida a mano para A1: al eliminar GAMA, A1 vuelve a la más barata; al deshacer, vuelve a GAMA a mano."""
+    cliente.put("/api/productos/A1/seleccion", json={"cod_empresa": "3"})
+    assert _item(cliente, "A1")["elegida_a_mano"]
+    gama = _fila(cliente, "empresas", CODIGO_EMPRESA="3")
+    cliente.delete(f"/api/admin/tablas/empresas/filas/{gama['id']}")
+    a1 = _item(cliente, "A1")
+    assert a1["elegida"]["cod_empresa"] != "3" and not a1["elegida_a_mano"]
+    assert "ya no los ofrece" not in _avisos(cliente)  # su elección se borró con él: no queda «huérfana»
+    h = cliente.get("/api/admin/historial").json()
+    cliente.post(f"/api/admin/historial/{h[0]['id']}/deshacer")
+    a1 = _item(cliente, "A1")
+    assert a1["elegida"]["cod_empresa"] == "3" and a1["elegida_a_mano"]
 
 
 def test_eliminar_la_unica_oferta_deja_el_producto_sin_oferta(cliente):
@@ -227,7 +252,7 @@ def test_deshacer_agregar_editar_y_eliminar(cliente):
     )
     cliente.delete(f"/api/admin/tablas/empresas/filas/{nueva_id}")
     h = cliente.get("/api/admin/historial", params={"tabla": "empresas"}).json()
-    assert [x["accion"] for x in h[:3]] == ["eliminar", "editar", "agregar"] and all(x["se_puede"] for x in h[:3])
+    assert [x["accion"] for x in h[:3]] == ["eliminar_empresa", "editar", "agregar"] and all(x["se_puede"] for x in h[:3])
 
     def nombre():
         f = _fila(cliente, "empresas", CODIGO_EMPRESA="9")
