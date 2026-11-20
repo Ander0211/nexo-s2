@@ -53,8 +53,9 @@ def test_descargar_excel_con_proveedor_1_2_3(cliente):
     cliente.post("/api/adicionales", json={"filas": [{"cod": p["cod"], "descripcion": p["descripcion"]}]})
     r = cliente.get("/api/adicionales/excel")
     ws = openpyxl.load_workbook(io.BytesIO(r.content)).active
-    assert [c.value for c in ws[1]][:6] == ["CÓDIGO", "DESCRIPCIÓN", "PROVEEDOR 1", "MENOR VALOR 1", "PROVEEDOR 2", "MENOR VALOR 2"]
-    assert ws.cell(2, 1).value == p["cod"] and ws.cell(2, 4).value is not None
+    assert [c.value for c in ws[1]][:8] == ["CÓDIGO", "DESCRIPCIÓN", "PROVEEDOR 1", "PRESENTACIÓN 1", "MENOR VALOR 1",
+                                            "PROVEEDOR 2", "PRESENTACIÓN 2", "MENOR VALOR 2"]
+    assert ws.cell(2, 1).value == p["cod"] and ws.cell(2, 5).value is not None
 
 
 def test_quitar_vaciar_y_permisos(cliente, como):

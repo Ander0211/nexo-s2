@@ -439,7 +439,7 @@ function formProveedor() {
   }
   /** Elimina el proveedor (pide confirmación; el servidor exige que sea tuyo y no tenga ofertas). */
   async function eliminar() {
-    if (!confirm(`¿Eliminar el proveedor «${actual.nombre}»?\n\nSe borra TODO lo suyo: sus ofertas, los productos donde se había elegido a mano y sus ofertas de «Adicionales». En cada producto, el tablero elegirá la siguiente oferta más baja de otro proveedor.`)) return;
+    if (!confirm(`¿Eliminar el proveedor «${actual.nombre}»?\n\nSe borra con todos los insumos cotizados: sus ofertas, los productos donde se había elegido a mano y sus ofertas de «Adicionales». En cada producto, el tablero elegirá la siguiente oferta más baja de otro proveedor.`)) return;
     try {
       const n = actual.nombre;
       await api.eliminarEmpresa(actual.cod);

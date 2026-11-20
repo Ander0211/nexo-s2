@@ -8,7 +8,7 @@ fecha, lo que había ANTES y lo que hay DESPUÉS. Desde el historial se puede de
     editar     → la fila vuelve a los valores que tenía
     eliminar   → la fila vuelve a existir, con su mismo número
     eliminar_varias → las filas vuelven a existir todas, con sus mismos números (se eliminaron juntas)
-    eliminar_empresa → el proveedor vuelve con TODO lo suyo: sus filas de Empresas y de Portafolio, sus ofertas cargadas,
+    eliminar_empresa → el proveedor vuelve con todos los insumos cotizados: sus filas de Empresas y de Portafolio, sus ofertas cargadas,
                        los productos donde se había elegido a mano y sus ofertas de «Adicionales»
     importar   → la tabla vuelve a estar como antes de importar el Excel (se guarda una copia completa)
 
@@ -78,7 +78,7 @@ def registrar_varias(
 
 
 def registrar_empresa(con: sqlite3.Connection, todo: dict, resumen: str, usuario: str | None = None) -> int:
-    """Anota la eliminación de uno o varios proveedores con TODO lo suyo (ver admin.eliminar), comprimido."""
+    """Anota la eliminación de uno o varios proveedores con todos los insumos cotizados (ver admin.eliminar), comprimido."""
     cur = con.execute(
         "INSERT INTO cambios (tabla, accion, antes, resumen, usuario) VALUES ('empresas', 'eliminar_empresa', ?, ?, ?)",
         (_comprimir([todo]), resumen, usuario),

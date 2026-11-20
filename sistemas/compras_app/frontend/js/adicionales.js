@@ -2,7 +2,7 @@
  * PANTALLA «ADICIONALES»
  * ======================
  * El usuario sube (Excel/CSV), pega o escribe el CÓDIGO y la DESCRIPCIÓN de productos, y ve para cada uno el Proveedor 1, 2 y 3
- * (en ese orden) con su MENOR VALOR ofertado al lado. Los cálculos los hace el servidor (app/services/adicionales.py).
+ * (en ese orden) con su PRESENTACIÓN y su MENOR VALOR ofertado al lado. Los cálculos los hace el servidor (app/services/adicionales.py).
  * «Vaciar lista» quita TODOS los productos de una vez (pide confirmar). Uno por uno no se borran: se INHABILITAN (quedan en rojo y no cuentan en el resumen ni en el Excel) y se pueden volver a habilitar.
  * Es una lista de consulta: no cambia el tablero ni la orden de compra.
  */
@@ -15,7 +15,7 @@ let datos = { items: [], total: 0, con_oferta: 0, sin_oferta: 0, inhabilitados: 
 let modo = 'uno';
 const POR_PAGINA = 300; // con hasta 100.000 productos, dibujar todos a la vez congelaría el navegador
 let visibles = POR_PAGINA;
-// Orden de la tabla: clic en un título (Código, Descripción, Proveedor N, Menor valor N); otro clic invierte el sentido.
+// Orden de la tabla: clic en un título (Código, Descripción, Proveedor N, Presentación N, Menor valor N); otro clic invierte el sentido.
 // Se ordenan TODOS los datos (no solo los 300 que se ven). Valores: de menor a mayor primero; textos: A–Z. Lo vacío va al final.
 let orden = null; // { campo: 'cod' | 'descripcion' | 'p1' | 'v1' | ..., asc: true }
 
@@ -23,7 +23,8 @@ function valorOrden(it, campo) {
   if (campo === 'cod' || campo === 'descripcion') return (it[campo] || '').toLocaleLowerCase('es') || null;
   const p = it.proveedores[Number(campo[1]) - 1];
   if (!p) return null;
-  return campo[0] === 'v' ? p.valor : (p.nombre || '').toLocaleLowerCase('es');
+  if (campo[0] === 'v') return p.valor;
+  return ((campo[0] === 'r' ? p.presentacion : p.nombre) || '').toLocaleLowerCase('es') || null;
 }
 
 function ordenar(items) {
@@ -57,16 +58,17 @@ function pintarKpis() {
   $('#adi-n-inh').textContent = fmtNum(datos.inhabilitados || 0);
 }
 
-/** Dos celdas por puesto: el proveedor y, al lado, su menor valor. */
+/** Tres celdas por puesto: el proveedor, su presentación y su menor valor. */
 function celdasProveedor(p, puesto) {
   if (!p) {
     return [el('td', { class: `adi-prov p${puesto} adi-nada` }, puesto === 1 ? el('span', { class: 'adi-sin' }, 'Sin oferta') : '—'),
+      el('td', { class: `adi-pres-td p${puesto} adi-nada` }, '—'),
       el('td', { class: `adi-val p${puesto} adi-nada num` }, '—')];
   }
   return [
     el('td', { class: `adi-prov p${puesto}` }, el('div', { class: 'adi-nombre', title: `Código ${p.cod_empresa}` }, p.nombre),
-      p.presentacion ? el('div', { class: 'adi-pres' }, p.presentacion) : null,
       p.fuera_del_tablero ? el('span', { class: 'adi-libre', title: `Oferta que el tablero no toma (${p.origen || 'oferta libre'}${p.fecha ? ', ' + p.fecha.slice(0, 10) : ''}). No entra a la orden de compra.` }, 'Fuera del tablero') : null),
+    el('td', { class: `adi-pres-td p${puesto}` }, p.presentacion || '—'),
     el('td', { class: `adi-val p${puesto} num` }, fmtMoney(p.valor)),
   ];
 }
@@ -80,10 +82,10 @@ function pintarTabla() {
   const cab = el('thead', {},
     el('tr', { class: 'adi-cab1' },
       th('Código', 'cod', { rowspan: 2 }), th('Descripción', 'descripcion', { rowspan: 2 }),
-      ...Array.from({ length: PUESTOS }, (_, i) => el('th', { colspan: 2, class: `adi-grupo-th p${i + 1}` }, `Proveedor ${i + 1}`)),
+      ...Array.from({ length: PUESTOS }, (_, i) => el('th', { colspan: 3, class: `adi-grupo-th p${i + 1}` }, `Proveedor ${i + 1}`)),
       editar ? el('th', { rowspan: 2, class: 'acc' }, 'Estado') : null),
     el('tr', { class: 'adi-cab2' },
-      ...Array.from({ length: PUESTOS }, (_, i) => [th('Proveedor', `p${i + 1}`, { class: `p${i + 1}` }), th('Menor valor', `v${i + 1}`, { class: `p${i + 1} num` })])));
+      ...Array.from({ length: PUESTOS }, (_, i) => [th('Proveedor', `p${i + 1}`, { class: `p${i + 1}` }), th('Presentación', `r${i + 1}`, { class: `p${i + 1} adi-pres-th` }), th('Menor valor', `v${i + 1}`, { class: `p${i + 1} num` })])));
   const filas = items.slice(0, visibles).map((it) => el('tr', { class: it.activo ? '' : 'adi-inhabilitado' },
     el('td', { class: 'adi-cod num' }, it.cod),
     el('td', { class: 'adi-descr' }, it.descripcion || '—',
@@ -96,7 +98,7 @@ function pintarTabla() {
       title: it.activo ? 'Inhabilitar: queda en rojo y no cuenta en el resumen ni en el Excel' : 'Volver a habilitar',
       onclick: () => cambiarEstado(it),
     }, it.activo ? 'Inhabilitar' : 'Habilitar')) : null));
-  const cols = 2 + PUESTOS * 2 + (editar ? 1 : 0);
+  const cols = 2 + PUESTOS * 3 + (editar ? 1 : 0);
   const cuerpo = filas.length ? filas : [el('tr', {}, el('td', { colspan: cols, class: 'adi-vacia' },
     datos.items.length ? 'Ningún producto coincide con la búsqueda.' : 'La lista está vacía. Pulse «Agregar» o suba un Excel con CÓDIGO y DESCRIPCIÓN.'))];
   const faltan = items.length - Math.min(visibles, items.length);

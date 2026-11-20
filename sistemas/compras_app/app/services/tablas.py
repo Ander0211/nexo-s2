@@ -736,7 +736,7 @@ def para_calculo(con: sqlite3.Connection, t: Tabla) -> pd.DataFrame:
 
 # --------------------------------------------------------------------------------------------- impacto de borrar
 def impacto_empresa(con: sqlite3.Connection, cod: str | None, nombre: str | None = None) -> str:
-    """El aviso al eliminar un proveedor: se borra TODO lo suyo y el tablero busca la siguiente oferta más baja."""
+    """El aviso al eliminar un proveedor: se borra con todos los insumos cotizados y el tablero busca la siguiente oferta más baja."""
     quien = f"«{nombre}» (código {cod})" if nombre else f"el proveedor {cod}"
     n_of = con.execute("SELECT COUNT(*) FROM ofertas WHERE cod_empresa = ?", (cod,)).fetchone()[0]
     if not n_of:
@@ -747,7 +747,7 @@ def impacto_empresa(con: sqlite3.Connection, cod: str | None, nombre: str | None
         if con.execute("SELECT COUNT(DISTINCT cod_empresa) FROM ofertas WHERE cod_producto = ?", (p,)).fetchone()[0] == 1
     )
     texto = (
-        f"Se elimina {quien} con TODO lo suyo: {'su oferta' if n_of == 1 else f'sus {n_of} ofertas'} (de Portafolio y las cargadas), los productos donde "
+        f"Se elimina {quien} con todos los insumos cotizados: {'su oferta' if n_of == 1 else f'sus {n_of} ofertas'} (de Portafolio y las cargadas), los productos donde "
         "se había elegido a mano y sus ofertas de «Adicionales». En cada producto donde estaba, el tablero elegirá la "
         "siguiente oferta más baja de otro proveedor."
     )

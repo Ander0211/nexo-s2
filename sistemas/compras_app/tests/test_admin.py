@@ -165,7 +165,7 @@ def test_eliminar_un_proveedor_borra_todo_lo_suyo_y_el_tablero_busca_la_siguient
     assert antes["cod_empresa"] == "2"
     beta = _fila(cliente, "empresas", CODIGO_EMPRESA="2")
     aviso = cliente.get(f"/api/admin/tablas/empresas/filas/{beta['id']}/impacto").json()["mensaje"]
-    assert "TODO lo suyo" in aviso and "siguiente oferta más baja" in aviso  # se le dice ANTES de confirmar
+    assert "con todos los insumos cotizados" in aviso and "siguiente oferta más baja" in aviso  # se le dice ANTES de confirmar
     r = cliente.delete(f"/api/admin/tablas/empresas/filas/{beta['id']}").json()
     assert r["eliminadas"] == 1 and r["ofertas_eliminadas"] >= 1
     a1 = _item(cliente, "A1")
@@ -173,7 +173,7 @@ def test_eliminar_un_proveedor_borra_todo_lo_suyo_y_el_tablero_busca_la_siguient
     assert _fila(cliente, "portafolio", COD_EMPRESA="2") is None  # nada de BETA en Portafolio
     assert "Proveedores con ofertas que no existen" not in _avisos(cliente)
     h = cliente.get("/api/admin/historial").json()
-    assert "todo lo suyo" in h[0]["resumen"]
+    assert "con todos los insumos cotizados" in h[0]["resumen"]
     assert cliente.post(f"/api/admin/historial/{h[0]['id']}/deshacer").status_code == 200
     a1 = _item(cliente, "A1")
     assert a1["mejor"]["cod_empresa"] == "2"  # volvió todo

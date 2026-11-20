@@ -146,7 +146,7 @@ def eliminar(con: sqlite3.Connection, clave: str, ids: list[int], usuario: str |
         raise tablas.TablaError("Esas filas ya no existen.", 404)
 
     if clave == "empresas":
-        # Eliminar un proveedor borra TODO lo suyo y el tablero busca la siguiente oferta más baja de otro proveedor.
+        # Eliminar un proveedor borra con todos los insumos cotizados y el tablero busca la siguiente oferta más baja de otro proveedor.
         codigos = {c for f in filas if (c := nz.codigo_empresa(f["valores"]["CODIGO_EMPRESA"]))}
 
         def trabajo_empresas():
@@ -157,7 +157,7 @@ def eliminar(con: sqlite3.Connection, clave: str, ids: list[int], usuario: str |
                 "SELECT COUNT(*) FROM ofertas WHERE cod_empresa IN (SELECT value FROM json_each(?))", (json.dumps(sorted(codigos)),)
             ).fetchone()[0]
             historial.registrar_empresa(
-                con, todo, f"Eliminó {'el proveedor' if len(filas) == 1 else f'{len(filas)} proveedores'} {nombres} y todo lo suyo "
+                con, todo, f"Eliminó {'el proveedor' if len(filas) == 1 else f'{len(filas)} proveedores'} {nombres} con todos los insumos cotizados "
                 f"({n_of} oferta{'' if n_of == 1 else 's'})", usuario)
             borrar_todo_de_empresas(con, codigos, todo)
             return {"eliminadas": tablas.borrar(con, t, [f["id"] for f in filas]), "ofertas_eliminadas": n_of}

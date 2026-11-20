@@ -215,14 +215,14 @@ def listar(con: sqlite3.Connection) -> dict:
 
 
 def excel(con: sqlite3.Connection) -> bytes:
-    """La lista con Proveedor 1, 2 y 3 y su menor valor, en un Excel."""
+    """La lista con Proveedor 1, 2 y 3, su presentación y su menor valor, en un Excel."""
     datos = [it for it in listar(con)["items"] if it["activo"]]  # los inhabilitados no van al Excel
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Adicionales"
     cab = ["CÓDIGO", "DESCRIPCIÓN"]
     for i in range(1, PUESTOS + 1):
-        cab += [f"PROVEEDOR {i}", f"MENOR VALOR {i}"]
+        cab += [f"PROVEEDOR {i}", f"PRESENTACIÓN {i}", f"MENOR VALOR {i}"]
     ws.append(cab)
     for c in ws[1]:
         c.font = Font(bold=True, color="FFFFFF")
@@ -232,12 +232,12 @@ def excel(con: sqlite3.Connection) -> bytes:
         fila = [it["cod"], it["descripcion"] or ""]
         for i in range(PUESTOS):
             p = it["proveedores"][i] if i < len(it["proveedores"]) else None
-            fila += [p["nombre"], p["valor"]] if p else (["Sin oferta", None] if i == 0 else ["", None])
+            fila += [p["nombre"], p.get("presentacion") or "", p["valor"]] if p else (["Sin oferta", "", None] if i == 0 else ["", "", None])
         ws.append(fila)
     for n in range(2, ws.max_row + 1):
         for k in range(PUESTOS):
-            ws.cell(n, 4 + 2 * k).number_format = '"$"#,##0.00'
-    anchos = [14, 45] + [32, 16] * PUESTOS
+            ws.cell(n, 5 + 3 * k).number_format = '"$"#,##0.00'
+    anchos = [14, 45] + [32, 18, 16] * PUESTOS
     for i, a in enumerate(anchos, start=1):
         ws.column_dimensions[get_column_letter(i)].width = a
     ws.freeze_panes = "C2"

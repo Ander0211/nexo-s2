@@ -314,11 +314,11 @@ async function pedirEliminar(ids) {
   }
   const ok = await confirmar({
     titulo: t.clave === 'empresas'
-      ? (ids.length === 1 ? '¿Eliminar este proveedor y todo lo suyo?' : `¿Eliminar ${fmtNum(ids.length)} proveedores y todo lo suyo?`)
+      ? (ids.length === 1 ? '¿Eliminar este proveedor con todos los insumos cotizados?' : `¿Eliminar ${fmtNum(ids.length)} proveedores con todos los insumos cotizados?`)
       : (ids.length === 1 ? '¿Eliminar esta fila?' : `¿Eliminar ${fmtNum(ids.length)} filas de ${t.titulo}?`),
     parrafos: [
       impacto || (ids.length > 1 ? (t.clave === 'empresas'
-        ? 'Se eliminan estos proveedores con TODO lo suyo (sus ofertas, los productos donde se habían elegido a mano y sus ofertas de «Adicionales»). En cada producto, el tablero elegirá la siguiente oferta más baja de otro proveedor.'
+        ? 'Se eliminan estos proveedores con todos los insumos cotizados (sus ofertas, los productos donde se habían elegido a mano y sus ofertas de «Adicionales»). En cada producto, el tablero elegirá la siguiente oferta más baja de otro proveedor.'
         : 'Lo que quede sin par saldrá en los avisos de datos.') : null),
       'Podrás deshacerlo desde el Historial.',
     ],

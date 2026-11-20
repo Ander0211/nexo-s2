@@ -120,7 +120,7 @@ def actualizar_empresa(con: sqlite3.Connection, cod: str, nombre, origen: str = 
 
 
 def eliminar_empresa(con: sqlite3.Connection, cod: str) -> int:
-    """Elimina un proveedor PROPIO con TODO lo suyo (ofertas, elegidos a mano, ofertas de «Adicionales»); el tablero
+    """Elimina un proveedor PROPIO con todos los insumos cotizados (ofertas, elegidos a mano, ofertas de «Adicionales»); el tablero
     busca la siguiente oferta más baja de otro proveedor. Los del Excel base se eliminan en Administración → Empresas
     (409 aquí). Devuelve cuántas ofertas se borraron."""
     fila = con.execute("SELECT * FROM empresas WHERE cod = ?", (cod,)).fetchone()
