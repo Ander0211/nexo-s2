@@ -7,12 +7,8 @@ Usted ya tiene la carpeta:
 El Excel de inventario va EN ESA carpeta sentinel (junto a server.py).
 Las copias nuevas (.bak) están en:
   \\172.168.100.10\copias
-  \\192.168.200.50\backup_saludips\2026
-
-BACKUP_SERVER (unidad Z: en el PC):
-  \\172.168.10.100\backup_server
-  Carpetas en esa unidad (como en el Explorador): 2019 2020 2021 2022 2023 2024 2025 2026
-  También: \\172.168.100.10\copias
+  \\172.168.10.100
+  (si la segunda pide carpeta: \\172.168.10.100\copias)
 
 
 PASO 1 — Instalar Python (solo la primera vez)
@@ -72,13 +68,11 @@ PASO 5 — Instalar la librería del Excel
 PASO 6 — Probar que ve las copias de red
 ----------------------------------------
   dir "\\172.168.100.10\copias"
-  dir "\\192.168.200.50\backup_saludips\2026"
+  dir "\\172.168.10.100"
+  dir "\\172.168.10.100\copias"
 
 Si dice que no encuentra la ruta: en el Explorador de Windows
-abra \\172.168.100.10\copias e inicie sesión. Luego repita dir.
-
-172.168.10.100 = VNC Viewer (pantalla remota). No es carpeta de .bak.
-SENTINEL no se conecta por VNC.
+abra cada una e inicie sesión. Luego repita dir.
 
 
 PASO 7 — Arrancar SENTINEL
@@ -103,13 +97,13 @@ Menú → Excel / inventario
 
 Debe verse:
   Ruta:  C:\Users\Db Developer\Documents\SENTINEL
-  Copias nuevas:  \\172.168.100.10\copias
+  Copias nuevas:  \\172.168.100.10\copias ; \\172.168.10.100
 
 Pulse "Leer ahora" la primera vez.
 
 Cada 30 segundos:
   - si cambia el Excel, actualiza tableros
-  - si aparece un .bak nuevo en \\172.168.100.10\copias,
+  - si aparece un .bak nuevo en \\172.168.100.10\copias o en \\172.168.10.100,
     lo agrega al Excel (sin duplicar)
   - la hoja Verificaciones NO se toca
   - Resultado / RTO solo salen de ENVIAR

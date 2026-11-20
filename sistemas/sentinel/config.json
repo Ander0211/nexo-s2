@@ -8,7 +8,7 @@
   "ultimo_total": null,
   "ultimo_hasta": null,
   "archivo_usado": null,
-  "copias": "\\\\172.168.100.10\\copias;\\\\192.168.200.50\\backup_saludips\\2026;\\\\172.168.10.100\\backup_server",
+  "copias": "\\\\172.168.100.10\\copias;\\\\172.168.10.100",
   "copias_activo": true,
   "copias_stamp": null,
   "copias_error": null,

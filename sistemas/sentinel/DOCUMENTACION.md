@@ -11,8 +11,7 @@ La interfaz no explica el sistema. Este archivo sí.
 - Muestra tableros, cadencia, semáforos, ficha por sistema.
 - Formato de verificación y verificación del día → hoja Verificaciones.
 - Vigila `C:\Users\Db Developer\Documents\SENTINEL` (Excel).
-- Recorre `\\172.168.100.10\copias` y `\\192.168.200.50\backup_saludips\2026` y agrega .bak nuevos (sin duplicar).
-- BACKUP_SERVER: unidad Z: = `\\172.168.10.100\backup_server` (carpetas 2019–2026). Semáforo verde/amarillo/rojo.
+- Recorre `\\172.168.100.10\copias` y `\\172.168.10.100` y agrega .bak nuevos al Excel (sin duplicar).
 
 ## Verificación del día (no por sistema)
 
@@ -48,7 +47,7 @@ ENVIAR escribe una fila, sistema `DIA`.
 ## server.py
 
 - `WIN_FUENTE`: carpeta del Excel.
-- `COPIAS_UNC`: `\\172.168.100.10\copias`. 172.168.10.100 se abre con VNC Viewer; no es fuente de .bak.
+- `COPIAS_UNCS`: `\\172.168.100.10\copias` y `\\172.168.10.100`. Si la segunda es solo IP, prueba el share `copias` y los discos que liste `net view` (no C$/ADMIN$).
 - `parse_path` / `ruta_permitida`: Documentos, UNC, home.
 - `pick_xlsx`: elige inventario/backup/sentinel o el .xlsx más reciente.
 - `listar_bak` + `merge_copias_into`: recorre la red, escribe FECHA/ARCHIVO/PESO. `escribir_celda` descombina MergedCell.
@@ -83,7 +82,7 @@ API:
 ## Arranque (PC Db Developer)
 
 Python en PATH, `py -m pip install openpyxl`, Excel cerrado,  
-`dir \\172.168.100.10\copias` visible, luego `iniciar-SENTINEL.bat`  
+`dir \\172.168.100.10\copias` y `dir \\172.168.10.100` (o `\\172.168.10.100\copias`) visibles, luego `iniciar-SENTINEL.bat`  
 y http://localhost:8080
 
 ## Usuarios y roles (usuarios.py)
